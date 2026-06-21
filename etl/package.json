@@ -1,0 +1,15 @@
+{
+  "name": "uma-skill-etl",
+  "version": "1.0.0",
+  "description": "ETL: extract master.mdb (Uma Musume) -> parse -> load ke MySQL",
+  "type": "commonjs",
+  "main": "run.js",
+  "scripts": {
+    "start": "node run.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "mysql2": "^3.11.3",
+    "dotenv": "^16.4.5"
+  }
+}
