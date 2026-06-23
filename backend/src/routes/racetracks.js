@@ -34,7 +34,7 @@ router.get('/:id/courses', async (req, res, next) => {
     }
 
     const [rows] = await pool.query(
-      `SELECT id, distance, ground, course_inout, turn, distance_category
+      `SELECT id, distance, ground, course_inout, turn, tight_track, distance_category
        FROM racetrack_courses
        WHERE racetrack_id = ?
        ORDER BY distance;`,

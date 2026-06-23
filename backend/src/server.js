@@ -12,6 +12,7 @@ const cors = require('cors');
 const racetrackRoutes = require('./routes/racetracks');
 const courseRoutes = require('./routes/courses');
 const skillRoutes = require('./routes/skills');
+const simulateRoutes = require('./routes/simulate');
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use(express.json());
 app.use('/api/racetracks', racetrackRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/skills', skillRoutes);
+app.use('/api/simulate', simulateRoutes);
 
 // Health check sederhana
 app.get('/api/health', (req, res) => {

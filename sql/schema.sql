@@ -38,6 +38,7 @@ CREATE TABLE racetrack_courses (
   ground              TINYINT NOT NULL,    -- 1 = turf, 2 = dirt
   course_inout        TINYINT,             -- inner/outer course variant (nama 'inout' reserved di MySQL)
   turn                TINYINT,             -- arah putaran / jumlah belokan (sesuai raw data)
+  tight_track         TINYINT(1) NOT NULL DEFAULT 0, -- 1 = "小回り" (tight/compact course), LANGSUNG dari master.mdb race_course_set.tight_track -- bukan inferensi, ground truth dari game
   distance_category   ENUM('short','mile','middle','long') GENERATED ALWAYS AS (
     CASE
       WHEN distance <= 1400 THEN 'short'
@@ -91,7 +92,7 @@ CREATE TABLE skill_condition_clauses (
   skill_id        INT NOT NULL,
   group_index     TINYINT NOT NULL,      -- 1 = dari condition_1, 2 = dari condition_2
   clause_index    TINYINT NOT NULL,      -- ke berapa di antara klausa yang dipisah '@' (OR)
-  variable_name   VARCHAR(50) NOT NULL,  -- mis. 'distance_rate', 'order_rate', 'remain_distance'
+  variable_name   VARCHAR(100) NOT NULL, -- mis. 'distance_rate', 'order_rate'; 100 char = margin aman (terpanjang ditemukan: 52 char)
   operator        VARCHAR(3) NOT NULL,   -- '>=', '<=', '>', '<', '=='
   term_value      INT NOT NULL,          -- nama 'value' reserved/ambigu di beberapa versi MySQL
   raw_term        VARCHAR(100) NOT NULL, -- term asli sebelum diparse, untuk debug

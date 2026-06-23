@@ -60,10 +60,10 @@ async function insertRacetracks(conn, rows) {
 async function insertRacetrackCourses(conn, rows) {
   if (rows.length === 0) return;
   const sql = `
-    INSERT INTO racetrack_courses (id, racetrack_id, distance, ground, course_inout, turn)
+    INSERT INTO racetrack_courses (id, racetrack_id, distance, ground, course_inout, turn, tight_track)
     VALUES ?
   `;
-  const values = rows.map((r) => [r.id, r.racetrack_id, r.distance, r.ground, r.course_inout, r.turn]);
+  const values = rows.map((r) => [r.id, r.racetrack_id, r.distance, r.ground, r.course_inout, r.turn, r.tight_track]);
   await conn.query(sql, [values]);
   console.log(`  - racetrack_courses: ${rows.length} baris`);
 }

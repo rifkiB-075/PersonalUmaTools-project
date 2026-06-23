@@ -84,3 +84,65 @@ ditest dengan 2082+ skill asli), detailnya akan tersimpan di
   "skill apa yang valid di track ini" pakai non-strict (variabel runtime
   seperti `distance_rate` diabaikan). Untuk simulasi posisi race penuh nanti,
   pakai strict dengan context lengkap.
+
+---
+
+## Backend API (folder `backend/`)
+
+Server Express yang menyajikan data dari MySQL ke frontend.
+
+### Setup
+
+```bash
+cd backend
+npm install
+copy .env.example .env
+```
+
+Edit `.env`, isi kredensial MySQL yang sama dengan yang dipakai ETL, dan
+`CORS_ORIGIN` sesuai alamat frontend kamu nanti (default `http://localhost:5173`
+untuk Vite dev server).
+
+### Jalankan
+
+```bash
+npm start
+```
+
+Server akan jalan di `http://localhost:3000` (atau sesuai `PORT` di `.env`).
+
+### Endpoint yang tersedia
+
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| GET | `/api/health` | Cek server hidup |
+| GET | `/api/racetracks` | List semua racetrack |
+| GET | `/api/racetracks/:id/courses` | List course (distance+ground) milik racetrack itu |
+| GET | `/api/courses/:courseId/valid-skills` | **Endpoint inti**: skill apa saja yang valid di course ini. Tambah `?onlyValid=true` untuk cuma dapat skill yang valid saja |
+| GET | `/api/skills/:id` | Detail satu skill + semua condition clause-nya |
+| GET | `/api/skills?search=keyword` | Cari skill berdasarkan nama |
+
+### Contoh pemakaian (alur frontend nanti)
+
+```
+1. GET /api/racetracks
+   -> user pilih "Tokyo" (id: 10006)
+
+2. GET /api/racetracks/10006/courses
+   -> user pilih course "2400m Turf" (id: misal 10608)
+
+3. GET /api/courses/10608/valid-skills?onlyValid=true
+   -> dapat daftar skill yang possibly valid di course itu
+```
+
+### Cara kerja logika validitas (Tahap 1)
+
+`services/skillValidityService.js` mengevaluasi tiap skill terhadap 4
+variabel STATIS yang terikat track/course: `track_id`, `course_distance`,
+`distance_type`, `ground_type`. Variabel RUNTIME (seperti `distance_rate`,
+`order_rate`, `phase`, dll — yang nilainya berubah sepanjang race) diabaikan
+di tahap ini; skill yang punya term runtime tapi term statisnya cocok
+(atau tidak punya term statis sama sekali) dianggap **possibly valid**.
+
+Ini akan dikembangkan lebih lanjut di Tahap 2 (simulasi posisi race) nanti.
+

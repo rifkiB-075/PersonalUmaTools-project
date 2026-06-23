@@ -31,11 +31,24 @@ const pool = require('../db/pool');
 // Variabel yang dianggap "statis terhadap track/course" di Tahap 1.
 // Variabel lain (distance_rate, order_rate, phase, dst) diabaikan dulu
 // karena itu state runtime race, bukan properti track.
+//
+// CATATAN (sudah dieksplorasi & diputuskan SENGAJA TIDAK dimasukkan):
+//   - ground_condition (firm/good/soft/heavy): TIDAK statis -- ini kondisi
+//     cuaca/tanah saat race berlangsung, bukan properti permanen course.
+//     race_course_set TIDAK punya kolom ini (sudah dicek), beda dengan
+//     tight_track yang memang kolom permanen. Course yang sama bisa firm
+//     hari ini, heavy besok. Masuk ke Tahap 2 (kondisi race, bukan track).
+//   - is_dirtgrade (race grade interchange/交流重賞): TIDAK statis -- ini
+//     properti RACE INSTANCE (event apa yang berlangsung), bukan course.
+//     Course yang sama bisa dipakai untuk race biasa atau race grade.
+//     Masuk ke Tahap 2 juga.
 const STATIC_TRACK_VARIABLES = new Set([
   'track_id',
   'course_distance',
   'distance_type',
   'ground_type',
+  'is_tight_track', // dari race_course_set.tight_track (ground truth, bukan inferensi)
+  'is_abroad', // dari racetracks.is_overseas
 ]);
 
 const DISTANCE_TYPE_MAP = {
@@ -83,7 +96,12 @@ function getDistanceType(distanceMeters) {
  */
 async function getCourseContext(courseId) {
   const [rows] = await pool.query(
-    `SELECT id, racetrack_id, distance, ground FROM racetrack_courses WHERE id = ?`,
+    `SELECT
+       c.id, c.racetrack_id, c.distance, c.ground, c.tight_track,
+       t.is_overseas
+     FROM racetrack_courses c
+     JOIN racetracks t ON t.id = c.racetrack_id
+     WHERE c.id = ?`,
     [courseId]
   );
 
@@ -97,6 +115,8 @@ async function getCourseContext(courseId) {
     course_distance: course.distance,
     distance_type: getDistanceType(course.distance),
     ground_type: course.ground, // 1=turf, 2=dirt, sudah sama persis dengan skema game
+    is_tight_track: course.tight_track, // langsung dari race_course_set.tight_track (ground truth)
+    is_abroad: course.is_overseas, // langsung dari racetracks.is_overseas
   };
 }
 

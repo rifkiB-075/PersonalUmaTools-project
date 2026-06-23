@@ -69,7 +69,7 @@ function extractRacetrackCourses(db) {
   const rows = db
     .prepare(
       `
-      SELECT id, race_track_id, distance, ground, inout AS course_inout, turn
+      SELECT id, race_track_id, distance, ground, inout AS course_inout, turn, tight_track
       FROM race_course_set
       ORDER BY race_track_id, distance;
       `
@@ -83,6 +83,7 @@ function extractRacetrackCourses(db) {
     ground: r.ground, // 1=turf, 2=dirt
     course_inout: r.course_inout,
     turn: r.turn,
+    tight_track: r.tight_track,
   }));
 }
 
