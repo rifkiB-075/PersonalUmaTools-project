@@ -146,3 +146,35 @@ di tahap ini; skill yang punya term runtime tapi term statisnya cocok
 
 Ini akan dikembangkan lebih lanjut di Tahap 2 (simulasi posisi race) nanti.
 
+---
+
+## Tahap Translasi (isi `name_en` & `description_en`)
+
+Setelah ETL jalan, kolom `name_en`/`description_en` di `skills` dan `name_en`
+di `racetracks` masih kosong (lihat catatan di atas). Dua script ini ngisi
+kolom-kolom itu:
+
+```bash
+cd etl
+npm run translate:tracks   # racetrack: pakai mapping nama JRA + overseas (hardcoded, sudah pasti)
+npm run translate:skills   # skill: fetch data komunitas yang sourced dari GameTora, lalu di-match
+```
+
+Tambahkan `--dry-run` di belakang kalau cuma mau preview tanpa nge-update
+database, mis. `node translate_skills.js --dry-run`.
+
+**Tentang `translate:skills`:** GameTora tidak punya API publik, jadi script
+ini ambil dari file data yang di-maintain tool komunitas lain yang sudah
+scrape GameTora (`alpha123/uma-tools`, `daftuyda/UmaTools`) — lihat komentar
+di awal `translate_skills.js` untuk detail & kalau ada link yang sudah mati/
+pindah. Setelah dijalankan:
+
+- Skill yang **cocok** langsung di-UPDATE ke database.
+- Skill yang **tidak cocok** (biasanya skill baru yang belum sempat ke-scrape,
+  atau beda format nama) disimpan ke `etl/skills_unmatched.json` buat dicek
+  & diisi manual.
+
+Aman dijalankan berkali-kali — yang sudah punya `name_en`/`description_en`
+tidak akan ditimpa ulang.
+
+

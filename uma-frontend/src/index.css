@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0f14;
+  --bg2: #13161e;
+  --bg3: #1a1e28;
+  --bg4: #222736;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #e8eaf0;
+  --text2: #8b8fa8;
+  --text3: #555870;
+  --accent: #c8a96e;
+  --accent2: #a8874e;
+  --accent-bg: rgba(200,169,110,0.10);
+  --accent-bg2: rgba(200,169,110,0.18);
+  --teal: #4ec9b0;
+  --teal-bg: rgba(78,201,176,0.10);
+  --blue: #5b9bd5;
+  --blue-bg: rgba(91,155,213,0.10);
+  --red: #e06c75;
+  --red-bg: rgba(224,108,117,0.10);
+  --green: #a8cc8c;
+  --green-bg: rgba(168,204,140,0.10);
+  --purple: #c586c0;
+  --purple-bg: rgba(197,134,192,0.10);
+  --radius: 8px;
+  --radius-lg: 12px;
+  --font: 'Noto Sans JP', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+  --transition: 0.15s ease;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+/* Form base */
+select, input[type=number], input[type=text] {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  padding: 7px 10px;
+  width: 100%;
+  outline: none;
+  transition: border-color var(--transition);
+  -webkit-appearance: none;
+  appearance: none;
+}
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b8fa8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+select:focus, input:focus { border-color: var(--accent); }
+select:disabled, input:disabled { opacity: 0.4; cursor: not-allowed; }

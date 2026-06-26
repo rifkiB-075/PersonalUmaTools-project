@@ -13,6 +13,7 @@ const racetrackRoutes = require('./routes/racetracks');
 const courseRoutes = require('./routes/courses');
 const skillRoutes = require('./routes/skills');
 const simulateRoutes = require('./routes/simulate');
+const umaRoutes = require('./routes/uma');
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/api/racetracks', racetrackRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/simulate', simulateRoutes);
+app.use('/api/uma', umaRoutes);
 
 // Health check sederhana
 app.get('/api/health', (req, res) => {

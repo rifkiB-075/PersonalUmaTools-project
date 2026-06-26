@@ -5,7 +5,9 @@
   "type": "commonjs",
   "main": "run.js",
   "scripts": {
-    "start": "node run.js"
+    "start": "node run.js",
+    "translate:tracks": "node translate_racetracks.js",
+    "translate:skills": "node translate_skills.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",

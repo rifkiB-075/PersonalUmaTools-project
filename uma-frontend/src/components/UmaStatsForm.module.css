@@ -1,0 +1,30 @@
+.statGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.statField label {
+  font-size: 11px;
+  color: var(--text3);
+  display: block;
+  margin-bottom: 4px;
+}
+.statField input {
+  padding: 6px 8px;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.aptGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.aptField label {
+  font-size: 11px;
+  color: var(--text3);
+  display: block;
+  margin-bottom: 4px;
+}
