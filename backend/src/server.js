@@ -14,6 +14,7 @@ const courseRoutes = require('./routes/courses');
 const skillRoutes = require('./routes/skills');
 const simulateRoutes = require('./routes/simulate');
 const umaRoutes = require('./routes/uma');
+const characterRoutes = require('./routes/characters');
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/simulate', simulateRoutes);
 app.use('/api/uma', umaRoutes);
+app.use('/api/characters', characterRoutes);
 
 // Health check sederhana
 app.get('/api/health', (req, res) => {

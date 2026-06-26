@@ -10,6 +10,7 @@ const NAV = [
   { to: '/', label: 'Skill Checker', icon: '🔍' },
   { to: '/simulate', label: 'Simulasi Race', icon: '🏇' },
   { to: '/skills', label: 'Daftar Skill', icon: '📋' },
+  { to: '/trainees', label: 'Trainee List', icon: '🐴' },
 ];
 
 export default function Layout({ children }) {

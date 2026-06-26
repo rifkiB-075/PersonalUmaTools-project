@@ -4,6 +4,7 @@ import Layout from './components/layout/Layout';
 import SkillCheckerPage from './pages/SkillChecker';
 import SimulatePage from './pages/Simulate';
 import SkillsPage from './pages/Skills';
+import TraineeListPage from './pages/TraineeList';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="/" element={<SkillCheckerPage />} />
             <Route path="/simulate" element={<SimulatePage />} />
             <Route path="/skills" element={<SkillsPage />} />
+            <Route path="/trainees" element={<TraineeListPage />} />
           </Routes>
         </Layout>
       </BrowserRouter>

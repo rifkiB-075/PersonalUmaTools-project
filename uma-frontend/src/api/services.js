@@ -31,3 +31,10 @@ export const simulateSkillCheck = (body) =>
 // Uma analyze (integrated endpoint)
 export const analyzeUma = (body) =>
   api.post('/uma/analyze', body).then((r) => r.data);
+
+// Characters
+export const getCharacters = (search = '', limit = 150) =>
+  api.get('/characters', { params: { search, limit } }).then((r) => r.data);
+
+export const getCharacter = (id) =>
+  api.get(`/characters/${id}`).then((r) => r.data);
