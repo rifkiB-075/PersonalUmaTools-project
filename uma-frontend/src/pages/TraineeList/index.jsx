@@ -116,35 +116,50 @@ export default function TraineeListPage() {
         )}
 
         <div className={styles.list}>
-          {characters.map(c => (
-            <button
-              key={c.id}
-              className={[styles.listItem, selectedId === c.id ? styles.listItemActive : ''].join(' ')}
-              onClick={() => selectCharacter(c.id)}
-            >
-              {/* Warna strip dari image_color_main */}
-              <span
-                className={styles.colorStrip}
-                style={{ background: `#${c.image_color_main || '888'}` }}
-              />
-              <div className={styles.listItemContent}>
-                <div className={styles.itemName}>
-                  {c.name_en || c.name_ja || `Trainee #${c.id}`}
-                </div>
-                {c.name_en && c.name_ja && (
-                  <div className={styles.itemNameJa}>{c.name_ja}</div>
-                )}
-                <div className={styles.itemMeta}>
-                  <span className={styles.itemId}>#{c.id}</span>
-                  {c.birth_month && (
-                    <span className={styles.itemBirth}>
-                      🎂 {String(c.birth_month).padStart(2,'0')}/{String(c.birth_day).padStart(2,'0')}
-                    </span>
+          {characters.map(c => {
+            const raceImg = c.name_en
+              ? `/images/uma_race/${c.name_en.replace(/ /g, '_')}_(Race).png`
+              : null;
+            return (
+              <button
+                key={c.id}
+                className={[styles.listItem, selectedId === c.id ? styles.listItemActive : ''].join(' ')}
+                onClick={() => selectCharacter(c.id)}
+              >
+                {/* Strip warna kiri */}
+                <span
+                  className={styles.colorStrip}
+                  style={{ background: `#${c.image_color_main || '888'}` }}
+                />
+                {/* Konten teks */}
+                <div className={styles.listItemContent}>
+                  <div className={styles.itemName}>
+                    {c.name_en || c.name_ja || `Trainee #${c.id}`}
+                  </div>
+                  {c.name_en && c.name_ja && (
+                    <div className={styles.itemNameJa}>{c.name_ja}</div>
                   )}
+                  <div className={styles.itemMeta}>
+                    <span className={styles.itemId}>#{c.id}</span>
+                    {c.birth_month && (
+                      <span className={styles.itemBirth}>
+                        🎂 {String(c.birth_month).padStart(2,'0')}/{String(c.birth_day).padStart(2,'0')}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
+                {/* Gambar race di kanan */}
+                {raceImg && (
+                  <img
+                    src={raceImg}
+                    alt=""
+                    className={styles.listItemRaceImg}
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -161,9 +176,13 @@ export default function TraineeListPage() {
             {/* ── Header karakter ── */}
             <Card>
               <div className={styles.charaHeader}>
-                <div
-                  className={styles.charaColorDot}
-                  style={{ background: `#${chara.image_color_main || '888'}` }}
+                <img
+                  src={`/images/uma_icons/Game_Playable_Icon_${chara.id}01.png`}
+                  alt=""
+                  className={styles.charaIcon}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
                 />
                 <div>
                   <div className={styles.charaName}>

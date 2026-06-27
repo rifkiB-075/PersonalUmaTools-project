@@ -158,6 +158,7 @@ async function getValidSkillsForCourse(courseId) {
       s.name_ja,
       s.name_en,
       s.rarity,
+      s.skill_category,
       s.icon_id,
       c.group_index,
       c.clause_index,
@@ -169,6 +170,15 @@ async function getValidSkillsForCourse(courseId) {
     ORDER BY s.id, c.group_index, c.clause_index;
     `
   );
+  
+  const isUniqueRarity = (skill) => skill.rarity === 3;
+
+const visibleSkills = allSkills.filter((s) => {
+  // Unique skill (rarity 3): tampilkan HANYA jika milik trainee yang dipilih
+  if (isUniqueRarity(s)) return traineeUniqueSkillIds.has(s.id);
+  // Non-unique: selalu tampilkan
+  return true;
+});
 
   // Group rows jadi per-skill -> per-group_index -> per-clause_index -> [terms]
   const skillMap = new Map();
@@ -180,6 +190,7 @@ async function getValidSkillsForCourse(courseId) {
         name_ja: row.name_ja,
         name_en: row.name_en,
         rarity: row.rarity,
+        skill_category: row.skill_category,
         icon_id: row.icon_id,
         groups: new Map(), // group_index -> Map(clause_index -> [terms])
       });
@@ -241,6 +252,7 @@ async function getValidSkillsForCourse(courseId) {
       name_ja: skill.name_ja,
       name_en: skill.name_en,
       rarity: skill.rarity,
+      skill_category: skill.skill_category,
       icon_id: skill.icon_id,
       isValid,
       isTrackSpecific: hasTrackSpecificTerm,
