@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+// uma-frontend/src/pages/SkillChecker/index.jsx
+import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAppStore } from '../../store/appStore';
 import { getValidSkills, analyzeUma, getCharacters, getCharacter } from '../../api/services';
@@ -12,8 +13,17 @@ const STEPS = ['Track', 'Trainee', 'Stats', 'Skills', 'Result'];
 const STATS = ['speed', 'stamina', 'power', 'guts', 'wisdom'];
 const STAT_LABELS = { speed: 'Speed', stamina: 'Stamina', power: 'Power', guts: 'Guts', wisdom: 'Wisdom' };
 
-// Unique skill = rarity 3 di tabel skills (1=normal, 2=gold, 3=unique)
 const isUniqueRarity = (skill) => skill.rarity === 3;
+
+function cardVersion(card_id, chara_id) {
+  return card_id - chara_id * 100;
+}
+
+function cardLabel(card_id, chara_id) {
+  const ver = cardVersion(card_id, chara_id);
+  if (ver === 1) return 'Default';
+  return `Alt ${ver}`;
+}
 
 export default function SkillCheckerPage() {
   const {
@@ -28,7 +38,11 @@ export default function SkillCheckerPage() {
   const [skillSearch, setSkillSearch] = useState('');
   const [traineeSearch, setTraineeSearch] = useState('');
   const [selectedTrainee, setSelectedTrainee] = useState(null);
+  const [selectedCardId, setSelectedCardId] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
+
+  // Ref untuk track skill yang sudah di-auto-select
+  const autoSelectedIdsRef = useRef(new Set());
 
   const { data: racetracks = [], isLoading: loadingTracks } = useQuery({
     queryKey: ['racetracks'],
@@ -58,13 +72,44 @@ export default function SkillCheckerPage() {
     staleTime: 60_000,
   });
 
+  const allCards = traineeDetail?.cards || [];
+
+  const cardGroups = allCards.reduce((acc, c) => {
+    if (!acc[c.card_id]) acc[c.card_id] = [];
+    acc[c.card_id].push(c);
+    return acc;
+  }, {});
+
+  const uniqueCardIds = Object.keys(cardGroups).map(Number).sort();
+  const activeCardId = selectedCardId ?? uniqueCardIds[0] ?? null;
+
+  useEffect(() => {
+    if (!traineeDetail) return;
+    const defaultCard = allCards
+      .filter(c => c.is_default_rarity)
+      .sort((a, b) => b.rarity - a.rarity)[0]
+      ?? allCards.sort((a, b) => b.rarity - a.rarity)[0];
+    setSelectedCardId(defaultCard?.card_id ?? null);
+  }, [traineeDetail?.character?.id]);
+
+  // Unique skill hanya dari card yang aktif
   const traineeUniqueSkillIds = new Set();
-  if (traineeDetail?.cards) {
-    for (const card of traineeDetail.cards) {
+  if (activeCardId && cardGroups[activeCardId]) {
+    for (const card of cardGroups[activeCardId]) {
       for (const sk of card.innate_skills || []) {
-        // Semua innate skill dianggap "unique" milik trainee ini
-        // (tidak filter rarity karena unique skill bisa punya rarity berbeda-beda)
         traineeUniqueSkillIds.add(sk.skill_id);
+      }
+    }
+  }
+
+  // Unique skill detail dari card aktif (untuk ditampilkan di step 3)
+  const uniqueSkillsFromDetail = [];
+  if (activeCardId && cardGroups[activeCardId]) {
+    for (const card of cardGroups[activeCardId]) {
+      for (const sk of card.innate_skills || []) {
+        if (!uniqueSkillsFromDetail.find(x => x.skill_id === sk.skill_id)) {
+          uniqueSkillsFromDetail.push(sk);
+        }
       }
     }
   }
@@ -72,34 +117,36 @@ export default function SkillCheckerPage() {
   const { data: skillData, isLoading: loadingSkills } = useQuery({
     queryKey: ['valid-skills', selectedCourse?.id],
     queryFn: () => getValidSkills(selectedCourse.id, false),
-    enabled: !!selectedCourse && step === 3,
-    staleTime: 30_000,
+    enabled: !!selectedCourse,
+    staleTime: 5 * 60_000,
   });
   const allSkills = skillData?.skills || [];
 
-  const visibleSkills = allSkills.filter((s) => {
-    // Unique skill (rarity 3): tampilkan HANYA jika milik trainee yang dipilih
-    if (isUniqueRarity(s)) return traineeUniqueSkillIds.has(s.id);
-    // Non-unique: selalu tampilkan
-    return true;
-  });
+  const nonUniqueSkills = allSkills.filter((s) => !isUniqueRarity(s));
 
-  const filteredSkills = visibleSkills.filter((s) => {
+  const filteredNonUnique = nonUniqueSkills.filter((s) => {
     if (!skillSearch.trim()) return true;
     const q = skillSearch.toLowerCase();
     return s.name_ja?.toLowerCase().includes(q) || s.name_en?.toLowerCase().includes(q);
   });
 
+  const filteredUnique = uniqueSkillsFromDetail.filter((sk) => {
+    if (!skillSearch.trim()) return true;
+    const q = skillSearch.toLowerCase();
+    return sk.name_ja?.toLowerCase().includes(q) || sk.name_en?.toLowerCase().includes(q);
+  });
+
+  // Auto-select unique skill saat trainee/card berubah
   useEffect(() => {
-    if (!skillData || traineeUniqueSkillIds.size === 0) return;
+    if (traineeUniqueSkillIds.size === 0) return;
     for (const id of traineeUniqueSkillIds) {
-      const exists = allSkills.some((s) => s.id === id);
-      if (exists && !selectedSkillIds.includes(id)) {
+      if (!selectedSkillIds.includes(id)) {
         toggleSkill(id);
       }
+      autoSelectedIdsRef.current.add(id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [skillData, traineeDetail]);
+  }, [activeCardId, traineeDetail]);
 
   const analyzeMutation = useMutation({
     mutationFn: analyzeUma,
@@ -132,15 +179,28 @@ export default function SkillCheckerPage() {
     clearSkills();
     setAnalysisResult(null);
     setSelectedTrainee(null);
+    setSelectedCardId(null);
+    autoSelectedIdsRef.current = new Set();
   };
 
   const handleSelectTrainee = (t) => {
-    if (selectedTrainee && selectedTrainee.id !== t.id) {
-      for (const id of traineeUniqueSkillIds) {
-        if (selectedSkillIds.includes(id)) toggleSkill(id);
-      }
+    // Hapus semua skill yang pernah di-auto-select
+    for (const id of autoSelectedIdsRef.current) {
+      if (selectedSkillIds.includes(id)) toggleSkill(id);
     }
+    autoSelectedIdsRef.current = new Set();
+
     setSelectedTrainee(selectedTrainee?.id === t.id ? null : t);
+    setSelectedCardId(null);
+  };
+
+  const handleSelectCard = (cardId) => {
+    // Hapus skill auto-select dari card sebelumnya
+    for (const id of autoSelectedIdsRef.current) {
+      if (selectedSkillIds.includes(id)) toggleSkill(id);
+    }
+    autoSelectedIdsRef.current = new Set();
+    setSelectedCardId(cardId);
   };
 
   const statusColor = {
@@ -150,6 +210,7 @@ export default function SkillCheckerPage() {
     unknown: 'var(--text3)',
   };
 
+  // ── Step 0: Track ──────────────────────────────────────────────────────────
   const renderStep0 = () => (
     <div className={styles.stepBody}>
       <h2 className={styles.stepTitle}>🏟️ Pilih Race Track & Course</h2>
@@ -211,6 +272,7 @@ export default function SkillCheckerPage() {
     </div>
   );
 
+  // ── Step 1: Trainee ────────────────────────────────────────────────────────
   const renderStep1 = () => (
     <div className={styles.stepBody}>
       <h2 className={styles.stepTitle}>
@@ -244,7 +306,45 @@ export default function SkillCheckerPage() {
               {traineeUniqueSkillIds.size} unique skill
             </span>
           )}
-          <button className={styles.clearBtn} onClick={() => setSelectedTrainee(null)}>✕</button>
+          <button className={styles.clearBtn} onClick={() => {
+            for (const id of autoSelectedIdsRef.current) {
+              if (selectedSkillIds.includes(id)) toggleSkill(id);
+            }
+            autoSelectedIdsRef.current = new Set();
+            setSelectedTrainee(null);
+            setSelectedCardId(null);
+          }}>✕</button>
+        </div>
+      )}
+
+      {selectedTrainee && uniqueCardIds.length > 1 && (
+        <div className={styles.cardVersionSection}>
+          <label className={styles.label}>Versi Trainee</label>
+          <div className={styles.cardVersionTabs}>
+            {uniqueCardIds.map((cid) => {
+              const isActive = cid === activeCardId;
+              const ver = cardVersion(cid, selectedTrainee.id);
+              const iconSuffix = String(ver).padStart(2, '0');
+              return (
+                <button
+                  key={cid}
+                  className={[
+                    styles.cardVersionTab,
+                    isActive ? styles.cardVersionTabActive : '',
+                  ].join(' ')}
+                  onClick={() => handleSelectCard(cid)}
+                >
+                  <img
+                    src={`/images/uma_icons/Game_Playable_Icon_${selectedTrainee.id}${iconSuffix}.png`}
+                    alt=""
+                    className={styles.cardVersionIcon}
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                  <span>{cardLabel(cid, selectedTrainee.id)}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -255,7 +355,6 @@ export default function SkillCheckerPage() {
           {trainees.map((t) => {
             const name = t.name_en || t.name_ja || '';
             const words = name.split(' ').filter(Boolean);
-            // Konversi name_en ke nama file: spasi → underscore
             const raceImg = t.name_en
               ? `/images/uma_race/${t.name_en.replace(/ /g, '_')}_(Race).png`
               : null;
@@ -265,13 +364,11 @@ export default function SkillCheckerPage() {
                 className={[styles.traineeCard, selectedTrainee?.id === t.id ? styles.traineeSelected : ''].join(' ')}
                 onClick={() => handleSelectTrainee(t)}
               >
-                {/* Teks besar transparan di background */}
                 <div className={styles.traineeNameBg}>
                   {words.map((w, i) => (
                     <span key={i} className={styles.traineeNameBgWord}>{w}</span>
                   ))}
                 </div>
-                {/* Gambar race trainee */}
                 {raceImg && (
                   <img
                     src={raceImg}
@@ -280,7 +377,6 @@ export default function SkillCheckerPage() {
                     onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 )}
-                {/* Badge nama di bawah */}
                 <span className={styles.traineeName}>{name}</span>
               </button>
             );
@@ -290,6 +386,7 @@ export default function SkillCheckerPage() {
     </div>
   );
 
+  // ── Step 2: Stats ──────────────────────────────────────────────────────────
   const renderStep2 = () => (
     <div className={styles.stepBody}>
       <h2 className={styles.stepTitle}>📊 Input Stats Uma</h2>
@@ -347,108 +444,109 @@ export default function SkillCheckerPage() {
     </div>
   );
 
-  const renderStep3 = () => {
-    const uniqueAutoSelected = filteredSkills.filter(
-      (s) => isUniqueRarity(s) && traineeUniqueSkillIds.has(s.id)
-    );
-    const nonUniqueSkills = filteredSkills.filter((s) => !isUniqueRarity(s));
+  // ── Step 3: Skills ─────────────────────────────────────────────────────────
+  const renderStep3 = () => (
+    <div className={styles.stepBody}>
+      <h2 className={styles.stepTitle}>🎯 Pilih Skill</h2>
 
-    return (
-      <div className={styles.stepBody}>
-        <h2 className={styles.stepTitle}>🎯 Pilih Skill</h2>
-
-        <div className={styles.skillHeader}>
-          <span className={styles.skillCount}>
-            {selectedSkillIds.length > 0
-              ? `${selectedSkillIds.length} skill dipilih`
-              : 'Belum ada skill dipilih'}
-          </span>
-          <input
-            type="text"
-            placeholder="Cari skill..."
-            value={skillSearch}
-            onChange={(e) => setSkillSearch(e.target.value)}
-            className={styles.searchInput}
-          />
-          {selectedSkillIds.length > 0 && (
-            <button className={styles.clearBtn} onClick={clearSkills}>Reset</button>
-          )}
-        </div>
-
-        {uniqueAutoSelected.length > 0 && (
-          <div className={styles.uniqueSection}>
-            <div className={styles.uniqueSectionLabel}>
-              ⭐ Unique Skill — {selectedTrainee?.name_en || selectedTrainee?.name_ja}
-              <span className={styles.autoTag}>otomatis dipilih</span>
-            </div>
-            <div className={styles.skillGrid}>
-              {uniqueAutoSelected.map((skill) => {
-                const selected = selectedSkillIds.includes(skill.id);
-                return (
-                  <button
-                    key={skill.id}
-                    className={[styles.skillCard, styles.skillUnique, selected ? styles.skillSelected : ''].join(' ')}
-                    onClick={() => toggleSkill(skill.id)}
-                  >
-                    <div className={styles.skillTop}>
-                      <Badge color={RARITY_COLORS[skill.rarity]} bg={`${RARITY_COLORS[skill.rarity]}18`}>
-                        {rarityLabel(skill.rarity)}
-                      </Badge>
-                      {selected && <span className={styles.checkmark}>✓</span>}
-                    </div>
-                    <div className={styles.skillName}>
-                      {skill.name_en || skill.name_ja || `Skill #${skill.id}`}
-                    </div>
-                    {skill.name_en && skill.name_ja && (
-                      <div className={styles.skillNameJa}>{skill.name_ja}</div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {loadingSkills ? (
-          <div className={styles.centerLoader}><Spinner size={28} /></div>
-        ) : nonUniqueSkills.length === 0 && uniqueAutoSelected.length === 0 ? (
-          <Empty icon="🔍" message="Tidak ada skill yang cocok" />
-        ) : (
-          nonUniqueSkills.length > 0 && (
-            <div className={styles.skillGrid}>
-              {nonUniqueSkills.map((skill) => {
-                const selected = selectedSkillIds.includes(skill.id);
-                return (
-                  <button
-                    key={skill.id}
-                    className={[styles.skillCard, selected ? styles.skillSelected : ''].join(' ')}
-                    onClick={() => toggleSkill(skill.id)}
-                  >
-                    <div className={styles.skillTop}>
-                      <Badge color={RARITY_COLORS[skill.rarity]} bg={`${RARITY_COLORS[skill.rarity]}18`}>
-                        {rarityLabel(skill.rarity)}
-                      </Badge>
-                      {selected && <span className={styles.checkmark}>✓</span>}
-                    </div>
-                    <div className={styles.skillName}>
-                      {skill.name_en || skill.name_ja || `Skill #${skill.id}`}
-                    </div>
-                    {skill.name_en && skill.name_ja && (
-                      <div className={styles.skillNameJa}>{skill.name_ja}</div>
-                    )}
-                    {skill.isValid === false && (
-                      <div className={styles.invalidBadge}>Possibly invalid</div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )
+      <div className={styles.skillHeader}>
+        <span className={styles.skillCount}>
+          {selectedSkillIds.length > 0
+            ? `${selectedSkillIds.length} skill dipilih`
+            : 'Belum ada skill dipilih'}
+        </span>
+        <input
+          type="text"
+          placeholder="Cari skill..."
+          value={skillSearch}
+          onChange={(e) => setSkillSearch(e.target.value)}
+          className={styles.searchInput}
+        />
+        {selectedSkillIds.length > 0 && (
+          <button className={styles.clearBtn} onClick={clearSkills}>Reset</button>
         )}
       </div>
-    );
-  };
 
+      {/* Unique skill dari traineeDetail langsung */}
+      {filteredUnique.length > 0 && (
+        <div className={styles.uniqueSection}>
+          <div className={styles.uniqueSectionLabel}>
+            ⭐ Unique Skill — {selectedTrainee?.name_en || selectedTrainee?.name_ja}
+            {uniqueCardIds.length > 1 && (
+              <span className={styles.cardVersionBadge}>
+                {cardLabel(activeCardId, selectedTrainee?.id)}
+              </span>
+            )}
+            <span className={styles.autoTag}>otomatis dipilih</span>
+          </div>
+          <div className={styles.skillGrid}>
+            {filteredUnique.map((sk) => {
+              const selected = selectedSkillIds.includes(sk.skill_id);
+              return (
+                <button
+                  key={sk.skill_id}
+                  className={[styles.skillCard, styles.skillUnique, selected ? styles.skillSelected : ''].join(' ')}
+                  onClick={() => toggleSkill(sk.skill_id)}
+                >
+                  <div className={styles.skillTop}>
+                    <Badge color={RARITY_COLORS[sk.rarity]} bg={`${RARITY_COLORS[sk.rarity]}18`}>
+                      {rarityLabel(sk.rarity)}
+                    </Badge>
+                    {selected && <span className={styles.checkmark}>✓</span>}
+                  </div>
+                  <div className={styles.skillName}>
+                    {sk.name_en || sk.name_ja || `Skill #${sk.skill_id}`}
+                  </div>
+                  {sk.name_en && sk.name_ja && (
+                    <div className={styles.skillNameJa}>{sk.name_ja}</div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {loadingSkills ? (
+        <div className={styles.centerLoader}><Spinner size={28} /></div>
+      ) : filteredNonUnique.length === 0 && filteredUnique.length === 0 ? (
+        <Empty icon="🔍" message="Tidak ada skill yang cocok" />
+      ) : (
+        filteredNonUnique.length > 0 && (
+          <div className={styles.skillGrid}>
+            {filteredNonUnique.map((skill) => {
+              const selected = selectedSkillIds.includes(skill.id);
+              return (
+                <button
+                  key={skill.id}
+                  className={[styles.skillCard, selected ? styles.skillSelected : ''].join(' ')}
+                  onClick={() => toggleSkill(skill.id)}
+                >
+                  <div className={styles.skillTop}>
+                    <Badge color={RARITY_COLORS[skill.rarity]} bg={`${RARITY_COLORS[skill.rarity]}18`}>
+                      {rarityLabel(skill.rarity)}
+                    </Badge>
+                    {selected && <span className={styles.checkmark}>✓</span>}
+                  </div>
+                  <div className={styles.skillName}>
+                    {skill.name_en || skill.name_ja || `Skill #${skill.id}`}
+                  </div>
+                  {skill.name_en && skill.name_ja && (
+                    <div className={styles.skillNameJa}>{skill.name_ja}</div>
+                  )}
+                  {skill.isValid === false && (
+                    <div className={styles.invalidBadge}>Possibly invalid</div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )
+      )}
+    </div>
+  );
+
+  // ── Step 4: Result ─────────────────────────────────────────────────────────
   const renderStep4 = () => (
     <div className={styles.stepBody}>
       <h2 className={styles.stepTitle}>📊 Hasil Analisis</h2>
@@ -471,7 +569,14 @@ export default function SkillCheckerPage() {
               <span className={styles.infoLabel}>Sections</span>
               <span>{analysisResult.simulationMeta?.totalSections}</span>
               <span className={styles.infoLabel}>Trainee</span>
-              <span>{selectedTrainee?.name_en || selectedTrainee?.name_ja || '—'}</span>
+              <span>
+                {selectedTrainee?.name_en || selectedTrainee?.name_ja || '—'}
+                {uniqueCardIds.length > 1 && activeCardId && (
+                  <span className={styles.cardVersionBadge} style={{ marginLeft: 6 }}>
+                    {cardLabel(activeCardId, selectedTrainee?.id)}
+                  </span>
+                )}
+              </span>
             </div>
           </Card>
 

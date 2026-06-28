@@ -452,3 +452,61 @@
   justify-content: center;
   padding: 40px 0;
 }
+/* Tambahkan di SkillChecker.module.css */
+
+/* ── Pilih versi card ── */
+.cardVersionSection {
+  margin-bottom: 16px;
+}
+
+.cardVersionTabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.cardVersionTab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg2);
+  color: var(--text2);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.cardVersionTab:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.cardVersionTabActive {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg2));
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.cardVersionIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Badge versi di uniqueSection label dan result */
+.cardVersionBadge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 6px;
+}
