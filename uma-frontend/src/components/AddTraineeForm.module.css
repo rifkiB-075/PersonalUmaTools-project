@@ -1,0 +1,174 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.searchInput {
+  margin-bottom: 8px;
+}
+
+.centerLoader {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.charaList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.charaItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 13px;
+}
+.charaItem:hover { background: var(--bg3); }
+
+.charaIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.selectedChara {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg3);
+}
+.selectedChara span { flex: 1; font-size: 13px; }
+
+.clearBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  color: var(--text2);
+  cursor: pointer;
+}
+.clearBtn:hover { color: var(--text); border-color: var(--text2); }
+
+.cardVersionTabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cardVersionTab {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+}
+.cardVersionTabActive {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.statField label {
+  font-size: 11px;
+  color: var(--text3);
+  display: block;
+  margin-bottom: 4px;
+}
+.statField input {
+  width: 100%;
+  padding: 6px 8px;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.aptGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.skillBlock {
+  margin-bottom: 10px;
+}
+.skillBlockLabel {
+  font-size: 11px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.skillGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.skillItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg2);
+  cursor: pointer;
+  text-align: left;
+}
+.skillItem:hover { border-color: var(--text2); }
+
+.skillUnique { border-color: rgba(255, 200, 80, 0.4); }
+
+.skillSelected {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.skillName {
+  font-size: 11px;
+  color: var(--text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkmark {
+  color: var(--accent);
+  font-size: 12px;
+  flex-shrink: 0;
+}

@@ -17,6 +17,133 @@
 
 .errorMsg { font-size: 12px; color: var(--red); }
 
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.hintMsg {
+  font-size: 12px;
+  color: var(--text3);
+  margin: -4px 0 0;
+}
+
+.traineeInfoCard {}
+.traineeInfoRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.traineeInfoIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.traineeInfoLabel { font-size: 14px; font-weight: 600; color: var(--text); }
+.traineeInfoSub { font-size: 11px; color: var(--text3); }
+
+/* ── Race leaderboard ── */
+.raceRow { padding: 10px 12px; }
+
+.raceRowHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.raceMedal {
+  font-size: 18px;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.raceIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.raceInfo { flex: 1; min-width: 0; }
+.raceLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.raceSub { font-size: 11px; color: var(--text3); }
+
+.raceTime {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.dnf { color: var(--red); font-size: 12px; font-weight: 600; }
+
+.expandArrow { color: var(--text3); font-size: 10px; flex-shrink: 0; }
+
+.raceStatLine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 6px;
+  padding-left: 46px;
+  font-size: 11px;
+  color: var(--text3);
+  font-family: var(--mono);
+}
+.skillSummaryLine { color: var(--text2); }
+
+.raceDetail {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.phaseBarWrap {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg4);
+}
+.phaseSeg { height: 100%; }
+
+.phaseLegend {
+  display: flex;
+  gap: 12px;
+  font-size: 10px;
+  color: var(--text3);
+}
+.phaseLegendItem { display: flex; align-items: center; gap: 4px; }
+.phaseDotLegend { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+.skillDetailList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.skillDetailItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.skillDetailName { flex: 1; color: var(--text); }
+.skillDetailStatus { font-size: 11px; font-weight: 600; }
+
 .right {
   padding: 16px;
   overflow-y: auto;
