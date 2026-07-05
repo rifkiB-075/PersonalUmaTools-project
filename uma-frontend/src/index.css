@@ -1,73 +1,87 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*, *::before, *::after { box-sizing: border-box; }
 
 :root {
-  --bg: #0d0f14;
-  --bg2: #13161e;
-  --bg3: #1a1e28;
-  --bg4: #222736;
-  --border: rgba(255,255,255,0.08);
-  --border2: rgba(255,255,255,0.14);
-  --text: #e8eaf0;
-  --text2: #8b8fa8;
-  --text3: #555870;
-  --accent: #c8a96e;
-  --accent2: #a8874e;
-  --accent-bg: rgba(200,169,110,0.10);
-  --accent-bg2: rgba(200,169,110,0.18);
-  --teal: #4ec9b0;
-  --teal-bg: rgba(78,201,176,0.10);
-  --blue: #5b9bd5;
-  --blue-bg: rgba(91,155,213,0.10);
-  --red: #e06c75;
-  --red-bg: rgba(224,108,117,0.10);
-  --green: #a8cc8c;
-  --green-bg: rgba(168,204,140,0.10);
-  --purple: #c586c0;
-  --purple-bg: rgba(197,134,192,0.10);
-  --radius: 8px;
-  --radius-lg: 12px;
-  --font: 'Noto Sans JP', sans-serif;
+  --bg: #f7f4ec;
+  --bg2: #fdfcf9;
+  --bg3: #f0ebdd;
+  --bg4: #e6ddc6;
+  --border: rgba(43,41,36,0.10);
+  --border2: rgba(43,41,36,0.16);
+  --text: #2b2924;
+  --text2: #6c6a5f;
+  --text3: #a39a87;
+  --accent: #6c8c5c;
+  --accent2: #556f48;
+  --accent-bg: rgba(108,140,92,0.10);
+  --accent-bg2: rgba(108,140,92,0.18);
+  --teal: #5c8f89;
+  --teal-bg: rgba(92,143,137,0.10);
+  --blue: #5b7f9b;
+  --blue-bg: rgba(91,127,155,0.10);
+  --red: #b9694a;
+  --red-bg: rgba(185,105,74,0.10);
+  --green: #6c8c5c;
+  --green-bg: rgba(108,140,92,0.10);
+  --purple: #9b7a9b;
+  --purple-bg: rgba(155,122,155,0.10);
+  --radius: 12px;
+  --radius-lg: 16px;
+  --font: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
   --mono: 'IBM Plex Mono', monospace;
-  --transition: 0.15s ease;
+  --transition: 0.18s ease;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
 }
 
 body {
-  background: var(--bg);
-  color: var(--text);
   font-family: var(--font);
-  font-size: 14px;
+  font-size: 14.5px;
   line-height: 1.6;
   min-height: 100vh;
 }
 
-/* Scrollbar */
+h1, h2, h3, .font-display {
+  font-family: var(--font-serif);
+}
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
 
-/* Form base */
 select, input[type=number], input[type=text] {
-  background: var(--bg3);
+  background: var(--bg2);
   border: 1px solid var(--border2);
   border-radius: var(--radius);
   color: var(--text);
   font-family: var(--font);
-  font-size: 13px;
-  padding: 7px 10px;
+  font-size: 13.5px;
+  padding: 9px 12px;
   width: 100%;
   outline: none;
-  transition: border-color var(--transition);
+  transition: border-color var(--transition), box-shadow var(--transition);
   -webkit-appearance: none;
   appearance: none;
 }
 select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b8fa8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c6a5f' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 10px center;
-  padding-right: 28px;
+  background-position: right 12px center;
+  padding-right: 30px;
+  cursor: pointer;
 }
-select:focus, input:focus { border-color: var(--accent); }
-select:disabled, input:disabled { opacity: 0.4; cursor: not-allowed; }
+select:focus, input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }

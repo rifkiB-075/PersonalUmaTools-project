@@ -1,14 +1,54 @@
-# Uma Musume Skill ETL
+# Uma Musume Skill ETL & Companion App
 
 Pipeline untuk extract data skill & racetrack dari `master.mdb` (Uma Musume:
-Pretty Derby) ke database MySQL/MariaDB sendiri.
+Pretty Derby) ke database MySQL/MariaDB sendiri, plus backend API dan
+frontend web app untuk kalkulator skill aktivasi.
+
+## 🚀 Cara Cepat Menjalankan (Backend + Frontend sekaligus)
+
+Setelah setup awal (lihat bagian **Backend API** dan **Frontend** di bawah
+untuk `npm install` dan `.env` masing-masing folder), pilih salah satu cara
+berikut supaya tidak perlu buka 2 terminal manual tiap kali mau jalanin
+project:
+
+**Pastikan Laragon (MySQL) sudah nyala dulu** sebelum menjalankan salah satu
+opsi di bawah — backend butuh koneksi database.
+
+### Opsi A — Double-click `start-uma.bat` (paling gampang)
+
+Taruh `start-uma.bat` di root folder `uma-project` (sejajar folder `backend`
+dan `uma-frontend`), lalu tinggal double-click. Ini akan otomatis membuka
+2 window terminal: satu untuk backend (`http://localhost:3000`), satu untuk
+frontend (`http://localhost:5173`).
+
+### Opsi B — `npm run dev` dari root (satu terminal)
+
+Taruh `package.json` di root folder `uma-project`, lalu jalankan sekali:
+
+```bash
+npm install
+```
+
+Setelahnya, tiap mau jalanin project cukup:
+
+```bash
+npm run dev
+```
+
+Backend dan frontend akan jalan bareng dalam satu terminal (log dibedakan
+warna: hijau = backend, cyan = frontend). `Ctrl+C` untuk mematikan keduanya
+sekaligus.
 
 ## Struktur
 
 ```
 uma-project/
+├── start-uma.bat           <- double-click buat jalanin backend+frontend sekaligus
+├── package.json            <- alternatif: `npm run dev` di root (perlu `npm install` sekali)
 ├── sql/
 │   └── schema.sql          <- jalankan ini dulu di MySQL kamu
+├── backend/                <- Express API, lihat bagian "Backend API" di bawah
+├── uma-frontend/            <- React (Vite) web app, lihat bagian "Frontend" di bawah
 └── etl/
     ├── conditionParser.js  <- parser formula kondisi aktivasi skill
     ├── extract.js          <- baca master.mdb (SQLite)
@@ -145,6 +185,43 @@ di tahap ini; skill yang punya term runtime tapi term statisnya cocok
 (atau tidak punya term statis sama sekali) dianggap **possibly valid**.
 
 Ini akan dikembangkan lebih lanjut di Tahap 2 (simulasi posisi race) nanti.
+
+---
+
+## Frontend (folder `uma-frontend/`)
+
+Web app React (Vite) untuk kalkulator skill aktivasi, dengan fitur Skill
+Checker (wizard 5 langkah: Track → Trainee → Stats → Skills → Result),
+Simulate (race leaderboard multi-trainee), dan Trainee List.
+
+### Setup
+
+```bash
+cd uma-frontend
+npm install
+copy .env.example .env
+```
+
+Edit `.env`, isi `VITE_API_URL` sesuai alamat backend kamu (default
+`http://localhost:3000`).
+
+### Jalankan
+
+```bash
+npm run dev
+```
+
+Frontend akan jalan di `http://localhost:5173`. Request ke `/api/*` otomatis
+di-proxy ke backend (`http://localhost:3000`) lewat konfigurasi `vite.config.js`.
+
+### Stack & catatan
+
+- State management pakai **Zustand** dengan persist ke `localStorage`
+  (trainee tersimpan yang sudah dibuat tetap ada walau browser ditutup).
+- Data fetching pakai **@tanstack/react-query** + **axios**.
+- Styling pakai **Tailwind CSS**.
+- Gambar aset (`asset/images`) di-serve langsung dari folder `asset/` di root
+  project lewat konfigurasi `publicDir` di `vite.config.js`.
 
 ---
 

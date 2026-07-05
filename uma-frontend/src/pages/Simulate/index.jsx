@@ -1,24 +1,23 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import { simulate, analyzeUma } from '../../api/services';
 import { useAppStore } from '../../store/appStore';
 import { Button, SectionLabel, Card, Badge, Empty, Spinner } from '../../components/ui';
 import { RARITY_COLORS, rarityLabel } from '../../utils/labels';
 import CourseSelector from '../../components/CourseSelector';
 import SavedTraineeManager from '../../components/SavedTraineeManager';
-import styles from './Simulate.module.css';
 
 const PHASE_LABELS = ['Early', 'Mid', 'Late', 'Last Spurt'];
-const PHASE_COLORS = ['#5b9bd5', '#a8cc8c', 'var(--accent)', '#e08a3c'];
+const PHASE_COLORS = ['#5b7f9b', '#8ba87a', 'var(--accent)', '#c17c56'];
 const SKILL_STATUS_COLOR = {
-  active: 'var(--green, #6fbf73)',
+  active: 'var(--green)',
   conditional: 'var(--accent)',
   invalid: 'var(--red)',
   unknown: 'var(--text3)',
   not_found: 'var(--text3)',
 };
 
-// Jalankan simulasi fisika untuk satu trainee, + analisis skill kalau ada skillIds
 async function runOneParticipant({ courseId, groundCondition, trainee }) {
   const simRes = await simulate({ courseId, groundCondition, uma: trainee.stats });
 
@@ -29,7 +28,7 @@ async function runOneParticipant({ courseId, groundCondition, trainee }) {
         courseId, groundCondition, uma: trainee.stats, skillIds: trainee.skillIds,
       });
     } catch {
-      skillsRes = null; // analisis skill gagal tidak boleh menggagalkan keseluruhan race
+      skillsRes = null;
     }
   }
 
@@ -48,7 +47,6 @@ export default function SimulatePage() {
       const results = await Promise.all(
         trainees.map((trainee) => runOneParticipant({ courseId, groundCondition, trainee }))
       );
-      // Ranking: yang finish (HP tidak habis) duluan, lalu waktu tercepat menang
       return [...results].sort((a, b) => {
         if (a.sim.ranOutOfHp !== b.sim.ranOutOfHp) return a.sim.ranOutOfHp ? 1 : -1;
         return a.sim.finishTimeSeconds - b.sim.finishTimeSeconds;
@@ -65,24 +63,21 @@ export default function SimulatePage() {
   const leaderboard = mutation.data || null;
 
   return (
-    <div className={styles.layout}>
+    <div className="grid h-full grid-cols-1 overflow-hidden md:grid-cols-editorial">
       {/* Left */}
-      <div className={styles.left}>
-        {/* 1. Kelola trainee tersimpan — independen dari pilihan track */}
+      <div className="flex flex-col gap-1 overflow-y-auto border-charcoal-100 px-4 py-5 md:border-r md:px-6 md:py-6">
         <SavedTraineeManager mode="manage" selectable={false} />
 
-        <div className={styles.divider} />
+        <div className="my-2 h-px bg-charcoal-100" />
 
-        {/* 2. Pilih track dulu */}
         <CourseSelector />
 
-        {/* 3. Setelah track dipilih, baru pilih peserta race (boleh lebih dari satu) */}
         {selectedCourse && (
           <SavedTraineeManager mode="pick" selectable />
         )}
 
         {selectedCourse && (
-          <div>
+          <div className="mb-4">
             <SectionLabel icon="🌤️">Ground Condition</SectionLabel>
             <select
               value={groundCondition}
@@ -109,28 +104,28 @@ export default function SimulatePage() {
         </Button>
 
         {selectedCourse && participants.length === 0 && (
-          <p className={styles.hintMsg}>Centang trainee tersimpan di atas untuk ikut race.</p>
+          <p className="mt-2 text-xs text-charcoal-400">Centang trainee tersimpan di atas untuk ikut race.</p>
         )}
 
         {mutation.isError && (
-          <p className={styles.errorMsg}>{mutation.error?.message}</p>
+          <p className="mt-2 text-xs font-medium text-clay-500">{mutation.error?.message}</p>
         )}
       </div>
 
       {/* Right: results */}
-      <div className={styles.right}>
-        <SectionLabel icon="🏁">Hasil Race</SectionLabel>
+      <div className="flex flex-col overflow-y-auto px-4 py-5 md:px-8 md:py-6">
+        <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-charcoal-400">🏁 Hasil Race</div>
 
         {!leaderboard && !mutation.isPending && (
           <Empty icon="🏇" message="Simpan trainee (boleh lebih dari satu), pilih track, lalu jalankan race" />
         )}
 
         {mutation.isPending && (
-          <div className={styles.loading}><Spinner size={32} /></div>
+          <div className="flex justify-center py-12"><Spinner size={32} /></div>
         )}
 
         {leaderboard && (
-          <div className={styles.resultContent}>
+          <div className="flex flex-col gap-3">
             {leaderboard.map((entry, i) => (
               <RaceResultRow
                 key={entry.trainee.id}
@@ -165,7 +160,6 @@ function RaceResultRow({ rank, entry, expanded, onToggle }) {
       )
     : null;
 
-  // Distribusi section per phase, untuk bar fase sederhana
   const phaseCounts = [0, 0, 0, 0];
   for (const snap of sim.snapshots || []) {
     if (phaseCounts[snap.phase] != null) phaseCounts[snap.phase]++;
@@ -173,119 +167,125 @@ function RaceResultRow({ rank, entry, expanded, onToggle }) {
   const totalSections = sim.snapshots?.length || 1;
 
   return (
-    <Card className={styles.raceRow}>
-      <div className={styles.raceRowHeader} onClick={onToggle} role="button">
-        <span className={styles.raceMedal}>{medal}</span>
+    <Card className="!p-0 overflow-hidden">
+      <div
+        className="flex cursor-pointer items-center gap-3 px-4 py-3.5"
+        onClick={onToggle}
+        role="button"
+      >
+        <span className="w-6 flex-shrink-0 text-center text-lg">{medal}</span>
         <img
           src={`/images/uma_icons/Game_Playable_Icon_${trainee.characterId}01.png`}
           alt=""
-          className={styles.raceIcon}
+          className="h-9 w-9 flex-shrink-0 rounded-full object-cover"
           onError={(e) => { e.target.style.display = 'none'; }}
         />
-        <div className={styles.raceInfo}>
-          <div className={styles.raceLabel}>{trainee.label}</div>
-          <div className={styles.raceSub}>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-medium text-charcoal-800">{trainee.label}</div>
+          <div className="truncate text-xs text-charcoal-400">
             {trainee.characterName}{trainee.cardLabel ? ` · ${trainee.cardLabel}` : ''}
           </div>
         </div>
-        <div className={styles.raceTime}>
+        <div className="flex-shrink-0 font-mono text-sm">
           {sim.ranOutOfHp ? (
-            <span className={styles.dnf}>HP Habis</span>
+            <span className="font-semibold text-clay-500">HP Habis</span>
           ) : (
-            <span>{sim.finishTimeSeconds.toFixed(2)}s</span>
+            <span className="text-charcoal-700">{sim.finishTimeSeconds.toFixed(2)}s</span>
           )}
         </div>
-        <span className={styles.expandArrow}>{expanded ? '▲' : '▼'}</span>
+        <span className="flex-shrink-0 text-xs text-charcoal-300">{expanded ? '▲' : '▼'}</span>
       </div>
 
-      <div className={styles.raceStatLine}>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-charcoal-100 bg-cream-100 px-4 py-2 text-xs text-charcoal-400">
         <span>HP Sisa: {sim.finalHp.toFixed(0)} / {sim.maxHp.toFixed(0)}</span>
         {skillSummary && (
-          <span className={styles.skillSummaryLine}>
-            🎯 {skillSummary.active || 0} aktif · {skillSummary.conditional || 0} kondisional · {skillSummary.invalid || 0} invalid
-          </span>
+          <span>🎯 {skillSummary.active || 0} aktif · {skillSummary.conditional || 0} kondisional · {skillSummary.invalid || 0} invalid</span>
         )}
         {!skills && trainee.skillIds?.length > 0 && (
-          <span className={styles.skillSummaryLine}>🎯 Analisis skill gagal dimuat</span>
+          <span>🎯 Analisis skill gagal dimuat</span>
         )}
         {(!trainee.skillIds || trainee.skillIds.length === 0) && (
-          <span className={styles.skillSummaryLine}>🎯 Tanpa skill</span>
+          <span>🎯 Tanpa skill</span>
         )}
       </div>
 
-      {expanded && (
-        <div className={styles.raceDetail}>
-          {/* Phase bar */}
-          <div className={styles.phaseBarWrap}>
-            {PHASE_LABELS.map((label, idx) => {
-              const pct = (phaseCounts[idx] / totalSections) * 100;
-              if (pct === 0) return null;
-              return (
-                <div
-                  key={idx}
-                  className={styles.phaseSeg}
-                  style={{ width: `${pct}%`, background: PHASE_COLORS[idx] }}
-                  title={`${label}: ${phaseCounts[idx]} section`}
-                />
-              );
-            })}
-          </div>
-          <div className={styles.phaseLegend}>
-            {PHASE_LABELS.map((label, idx) => (
-              <span key={idx} className={styles.phaseLegendItem}>
-                <span className={styles.phaseDotLegend} style={{ background: PHASE_COLORS[idx] }} />
-                {label}
-              </span>
-            ))}
-          </div>
-
-          {/* Skill list */}
-          {skills && skills.skills.length > 0 && (
-            <div className={styles.skillDetailList}>
-              {skills.skills.map((s) => (
-                <div key={s.id} className={styles.skillDetailItem}>
-                  <Badge color={RARITY_COLORS[s.rarity]} bg={`${RARITY_COLORS[s.rarity]}18`}>
-                    {rarityLabel(s.rarity)}
-                  </Badge>
-                  <span className={styles.skillDetailName}>{s.name_en || s.name_ja || `#${s.id}`}</span>
-                  <span
-                    className={styles.skillDetailStatus}
-                    style={{ color: SKILL_STATUS_COLOR[s.status] || 'var(--text3)' }}
-                  >
-                    {s.status}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-charcoal-100 p-4">
+              {/* Phase bar */}
+              <div className="mb-2 flex h-2 overflow-hidden rounded-full">
+                {PHASE_LABELS.map((label, idx) => {
+                  const pct = (phaseCounts[idx] / totalSections) * 100;
+                  if (pct === 0) return null;
+                  return (
+                    <div
+                      key={idx}
+                      style={{ width: `${pct}%`, background: PHASE_COLORS[idx] }}
+                      title={`${label}: ${phaseCounts[idx]} section`}
+                    />
+                  );
+                })}
+              </div>
+              <div className="mb-4 flex flex-wrap gap-3 text-[11px] text-charcoal-400">
+                {PHASE_LABELS.map((label, idx) => (
+                  <span key={idx} className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full" style={{ background: PHASE_COLORS[idx] }} />
+                    {label}
                   </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Snapshot table */}
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Dist</th>
-                  <th>Speed</th>
-                  <th>HP</th>
-                  <th>Phase</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(sim.snapshots || []).map((snap, i) => (
-                  <tr key={i}>
-                    <td className={styles.mono}>{i}</td>
-                    <td className={styles.mono}>{snap.distanceTraveled?.toFixed(0)}m</td>
-                    <td className={styles.mono}>{snap.currentSpeed?.toFixed(2)}</td>
-                    <td className={styles.mono}>{snap.hp?.toFixed(0)}</td>
-                    <td className={styles.mono}>{PHASE_LABELS[snap.phase] ?? snap.phase}</td>
-                  </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+              </div>
+
+              {skills && skills.skills.length > 0 && (
+                <div className="mb-4 flex flex-col gap-1.5">
+                  {skills.skills.map((s) => (
+                    <div key={s.id} className="flex items-center gap-2 rounded-lg bg-cream-100 px-2.5 py-1.5 text-xs">
+                      <Badge color={RARITY_COLORS[s.rarity]} bg={`${RARITY_COLORS[s.rarity]}18`}>
+                        {rarityLabel(s.rarity)}
+                      </Badge>
+                      <span className="flex-1 truncate text-charcoal-700">{s.name_en || s.name_ja || `#${s.id}`}</span>
+                      <span className="flex-shrink-0 font-semibold" style={{ color: SKILL_STATUS_COLOR[s.status] || 'var(--text3)' }}>
+                        {s.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="overflow-x-auto rounded-xl border border-charcoal-100">
+                <table className="w-full font-mono text-[11px]">
+                  <thead>
+                    <tr className="border-b border-charcoal-100 bg-cream-100 text-charcoal-400">
+                      <th className="px-2.5 py-1.5 text-left font-medium">#</th>
+                      <th className="px-2.5 py-1.5 text-left font-medium">Dist</th>
+                      <th className="px-2.5 py-1.5 text-left font-medium">Speed</th>
+                      <th className="px-2.5 py-1.5 text-left font-medium">HP</th>
+                      <th className="px-2.5 py-1.5 text-left font-medium">Phase</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(sim.snapshots || []).map((snap, i) => (
+                      <tr key={i} className="border-b border-charcoal-50 last:border-0">
+                        <td className="px-2.5 py-1 text-charcoal-400">{i}</td>
+                        <td className="px-2.5 py-1">{snap.distanceTraveled?.toFixed(0)}m</td>
+                        <td className="px-2.5 py-1">{snap.currentSpeed?.toFixed(2)}</td>
+                        <td className="px-2.5 py-1">{snap.hp?.toFixed(0)}</td>
+                        <td className="px-2.5 py-1">{PHASE_LABELS[snap.phase] ?? snap.phase}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Card>
   );
 }

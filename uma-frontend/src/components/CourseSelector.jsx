@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getRacetracks, getCourses } from '../api/services';
 import { useAppStore } from '../store/appStore';
-import { FormGroup, SectionLabel, Spinner } from './ui';
+import { SectionLabel, Spinner } from './ui';
 import { formatTrackName, formatCourseName } from '../utils/labels';
 
 export default function CourseSelector() {
@@ -29,7 +29,8 @@ export default function CourseSelector() {
     <div>
       <SectionLabel icon="🏟️">Pilih Course</SectionLabel>
 
-      <FormGroup label="Racetrack">
+      <div className="mb-4">
+        <label className="mb-1.5 block text-xs font-medium text-charcoal-500">Racetrack</label>
         {loadingTracks ? (
           <Spinner />
         ) : (
@@ -48,9 +49,10 @@ export default function CourseSelector() {
             ))}
           </select>
         )}
-      </FormGroup>
+      </div>
 
-      <FormGroup label="Course">
+      <div className="mb-4">
+        <label className="mb-1.5 block text-xs font-medium text-charcoal-500">Course</label>
         {loadingCourses && selectedRacetrack ? (
           <Spinner />
         ) : (
@@ -70,7 +72,7 @@ export default function CourseSelector() {
             ))}
           </select>
         )}
-      </FormGroup>
+      </div>
     </div>
   );
 }

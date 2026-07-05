@@ -1,25 +1,24 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import { getCharacters, getCharacter } from '../../api/services';
-import { SectionLabel, Card, Badge, Empty, Spinner } from '../../components/ui';
+import { Card, Badge, Empty, Spinner } from '../../components/ui';
 import { RARITY_COLORS, rarityLabel } from '../../utils/labels';
-import styles from './TraineeList.module.css';
 
-// Apt rank → warna
 const APT_COLOR = {
   S: 'var(--accent)',
-  A: '#a8cc8c',
-  B: '#5b9bd5',
+  A: '#8ba87a',
+  B: '#5b7f9b',
   C: 'var(--text)',
   D: 'var(--text2)',
   E: 'var(--text3)',
   F: 'var(--text3)',
-  G: '#444860',
+  G: '#c9c3b6',
 };
 
 function AptBadge({ rank }) {
   return (
-    <span className={styles.aptBadge} style={{ color: APT_COLOR[rank] || 'var(--text3)' }}>
+    <span className="font-mono text-xs font-semibold" style={{ color: APT_COLOR[rank] || 'var(--text3)' }}>
       {rank}
     </span>
   );
@@ -28,17 +27,21 @@ function AptBadge({ rank }) {
 function StatBar({ label, value, max = 1200 }) {
   const pct = Math.min((value / max) * 100, 100);
   return (
-    <div className={styles.statRow}>
-      <span className={styles.statLabel}>{label}</span>
-      <div className={styles.statBarWrap}>
-        <div className={styles.statBarFill} style={{ width: `${pct}%` }} />
+    <div className="mb-2.5 flex items-center gap-3 last:mb-0">
+      <span className="w-16 flex-shrink-0 text-xs font-medium text-charcoal-500">{label}</span>
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-charcoal-100">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="h-full rounded-full bg-sage-500"
+        />
       </div>
-      <span className={styles.statVal}>{value}</span>
+      <span className="w-10 flex-shrink-0 text-right font-mono text-xs text-charcoal-600">{value}</span>
     </div>
   );
 }
 
-// Pilih card default (is_default_rarity = true dan rarity tertinggi)
 function pickDefaultCard(cards) {
   if (!cards || cards.length === 0) return null;
   const defaults = cards.filter(c => c.is_default_rarity);
@@ -46,7 +49,6 @@ function pickDefaultCard(cards) {
   return defaults.reduce((best, c) => (c.rarity > best.rarity ? c : best), defaults[0]);
 }
 
-// Format tanggal lahir
 function formatBirthday(year, month, day) {
   if (!month && !day) return '—';
   return `${String(month).padStart(2,'0')}/${String(day).padStart(2,'0')}/${year || '?'}`;
@@ -55,9 +57,8 @@ function formatBirthday(year, month, day) {
 export default function TraineeListPage() {
   const [search, setSearch]       = useState('');
   const [selectedId, setSelectedId] = useState(null);
-  const [activeCard, setActiveCard] = useState(null); // card_id yang dipilih di panel detail
+  const [activeCard, setActiveCard] = useState(null);
 
-  // ── List karakter ──
   const { data, isLoading } = useQuery({
     queryKey: ['characters', search],
     queryFn:  () => getCharacters(search, 150),
@@ -65,7 +66,6 @@ export default function TraineeListPage() {
   });
   const characters = data?.characters || [];
 
-  // ── Detail karakter ──
   const { data: detail, isLoading: loadingDetail } = useQuery({
     queryKey: ['character-detail', selectedId],
     queryFn:  () => getCharacter(selectedId),
@@ -76,19 +76,16 @@ export default function TraineeListPage() {
   const chara = detail?.character;
   const cards = detail?.cards || [];
 
-  // Ketika detail baru dimuat, reset activeCard ke default
   const defaultCard = pickDefaultCard(cards);
   const selectedCard = cards.find(c =>
     c.card_id === (activeCard?.card_id) && c.rarity === (activeCard?.rarity)
   ) || defaultCard;
 
-  // Pilih karakter → reset panel card
   function selectCharacter(id) {
     setSelectedId(id);
     setActiveCard(null);
   }
 
-  // Group card by card_id (tiap card_id punya 3 rarity)
   const cardGroups = cards.reduce((acc, c) => {
     if (!acc[c.card_id]) acc[c.card_id] = [];
     acc[c.card_id].push(c);
@@ -96,11 +93,11 @@ export default function TraineeListPage() {
   }, {});
 
   return (
-    <div className={styles.layout}>
-
-      {/* ── Kolom kiri: search + list ── */}
-      <div className={styles.left}>
-        <div className={styles.searchWrap}>
+    <div className="grid h-full grid-cols-1 overflow-hidden md:grid-cols-editorial">
+      {/* Left: search + list */}
+      <div className="flex flex-col overflow-hidden border-charcoal-100 md:border-r">
+        <div className="flex-shrink-0 border-b border-charcoal-100 bg-cream-50 px-4 py-4 md:px-6">
+          <h2 className="font-serif text-xl font-semibold text-charcoal-800 mb-3">Trainee List</h2>
           <input
             type="text"
             placeholder="Cari nama trainee (JP atau EN)..."
@@ -109,91 +106,93 @@ export default function TraineeListPage() {
           />
         </div>
 
-        {isLoading && <div className={styles.loading}><Spinner /></div>}
+        <div className="flex-1 overflow-y-auto px-4 py-3 md:px-6">
+          {isLoading && <div className="flex justify-center py-8"><Spinner /></div>}
 
-        {!isLoading && characters.length === 0 && (
-          <Empty icon="🐴" message="Tidak ada trainee ditemukan" />
-        )}
+          {!isLoading && characters.length === 0 && (
+            <Empty icon="🐴" message="Tidak ada trainee ditemukan" />
+          )}
 
-        <div className={styles.list}>
-          {characters.map(c => {
-            const raceImg = c.name_en
-              ? `/images/uma_race/${c.name_en.replace(/ /g, '_')}_(Race).png`
-              : null;
-            return (
-              <button
-                key={c.id}
-                className={[styles.listItem, selectedId === c.id ? styles.listItemActive : ''].join(' ')}
-                onClick={() => selectCharacter(c.id)}
-              >
-                {/* Strip warna kiri */}
-                <span
-                  className={styles.colorStrip}
-                  style={{ background: `#${c.image_color_main || '888'}` }}
-                />
-                {/* Konten teks */}
-                <div className={styles.listItemContent}>
-                  <div className={styles.itemName}>
-                    {c.name_en || c.name_ja || `Trainee #${c.id}`}
-                  </div>
-                  {c.name_en && c.name_ja && (
-                    <div className={styles.itemNameJa}>{c.name_ja}</div>
-                  )}
-                  <div className={styles.itemMeta}>
-                    <span className={styles.itemId}>#{c.id}</span>
-                    {c.birth_month && (
-                      <span className={styles.itemBirth}>
-                        🎂 {String(c.birth_month).padStart(2,'0')}/{String(c.birth_day).padStart(2,'0')}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {/* Gambar race di kanan */}
-                {raceImg && (
-                  <img
-                    src={raceImg}
-                    alt=""
-                    className={styles.listItemRaceImg}
-                    onError={(e) => { e.target.style.display = 'none'; }}
+          <div className="flex flex-col gap-2">
+            {characters.map(c => {
+              const raceImg = c.name_en
+                ? `/images/uma_race/${c.name_en.replace(/ /g, '_')}_(Race).png`
+                : null;
+              const active = selectedId === c.id;
+              return (
+                <button
+                  key={c.id}
+                  className={[
+                    'relative flex items-center gap-3 overflow-hidden rounded-2xl border pl-4 pr-3 py-2.5 text-left transition-colors',
+                    active ? 'border-sage-500 bg-sage-50' : 'border-charcoal-100 bg-cream-50 hover:border-charcoal-300',
+                  ].join(' ')}
+                  onClick={() => selectCharacter(c.id)}
+                >
+                  <span
+                    className="absolute left-0 top-0 h-full w-1"
+                    style={{ background: `#${c.image_color_main || '888'}` }}
                   />
-                )}
-              </button>
-            );
-          })}
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium text-charcoal-800">
+                      {c.name_en || c.name_ja || `Trainee #${c.id}`}
+                    </div>
+                    {c.name_en && c.name_ja && (
+                      <div className="truncate text-xs text-charcoal-400">{c.name_ja}</div>
+                    )}
+                    <div className="mt-0.5 flex items-center gap-2 font-mono text-[10px] text-charcoal-300">
+                      <span>#{c.id}</span>
+                      {c.birth_month && (
+                        <span>🎂 {String(c.birth_month).padStart(2,'0')}/{String(c.birth_day).padStart(2,'0')}</span>
+                      )}
+                    </div>
+                  </div>
+                  {raceImg && (
+                    <img
+                      src={raceImg}
+                      alt=""
+                      className="h-10 w-14 flex-shrink-0 rounded-lg object-cover"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* ── Kolom kanan: detail ── */}
-      <div className={styles.right}>
-        <SectionLabel icon="🐎">Detail Trainee</SectionLabel>
+      {/* Right: detail */}
+      <div className="flex flex-col overflow-y-auto px-4 py-5 md:px-8 md:py-6">
+        <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-charcoal-400">🐎 Detail Trainee</div>
 
         {!selectedId && <Empty icon="👆" message="Klik trainee untuk lihat detail" />}
-        {loadingDetail && <div className={styles.loading}><Spinner size={28} /></div>}
+        {loadingDetail && <div className="flex justify-center py-8"><Spinner size={28} /></div>}
 
         {chara && !loadingDetail && (
-          <div className={styles.detailContent}>
-
-            {/* ── Header karakter ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="flex flex-col gap-4"
+          >
             <Card>
-              <div className={styles.charaHeader}>
+              <div className="flex items-center gap-3">
                 <img
                   src={`/images/uma_icons/Game_Playable_Icon_${chara.id}01.png`}
                   alt=""
-                  className={styles.charaIcon}
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
+                  className="h-14 w-14 rounded-full object-cover"
+                  onError={(e) => { e.target.style.display = 'none'; }}
                 />
                 <div>
-                  <div className={styles.charaName}>
+                  <div className="font-serif text-xl font-semibold text-charcoal-800">
                     {chara.name_en || chara.name_ja}
                   </div>
                   {chara.name_en && chara.name_ja && (
-                    <div className={styles.charaNameJa}>{chara.name_ja}</div>
+                    <div className="text-sm text-charcoal-400">{chara.name_ja}</div>
                   )}
                 </div>
               </div>
-              <div className={styles.charaMeta}>
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-charcoal-400">
                 <span>#{chara.id}</span>
                 <span>🎂 {formatBirthday(chara.birth_year, chara.birth_month, chara.birth_day)}</span>
                 {chara.height && <span>📏 {chara.height} cm</span>}
@@ -201,16 +200,18 @@ export default function TraineeListPage() {
               </div>
             </Card>
 
-            {/* ── Tab pilih card_id ── */}
             {Object.keys(cardGroups).length > 1 && (
-              <div className={styles.cardTabs}>
+              <div className="flex flex-wrap gap-2">
                 {Object.keys(cardGroups).map(cid => {
                   const group = cardGroups[cid];
                   const isActive = selectedCard && String(selectedCard.card_id) === cid;
                   return (
                     <button
                       key={cid}
-                      className={[styles.cardTab, isActive ? styles.cardTabActive : ''].join(' ')}
+                      className={[
+                        'rounded-2xl border px-3 py-1.5 text-xs font-medium transition-colors',
+                        isActive ? 'border-sage-500 bg-sage-50 text-sage-700' : 'border-charcoal-200 text-charcoal-500 hover:border-charcoal-400',
+                      ].join(' ')}
                       onClick={() => setActiveCard({ card_id: Number(cid), rarity: group[group.length - 1].rarity })}
                     >
                       Card {cid}
@@ -220,16 +221,17 @@ export default function TraineeListPage() {
               </div>
             )}
 
-            {/* ── Tab pilih rarity di dalam card yang dipilih ── */}
             {selectedCard && (
               <>
-                <div className={styles.rarityTabs}>
+                <div className="flex flex-wrap gap-2">
                   {(cardGroups[selectedCard.card_id] || []).map(c => (
                     <button
                       key={c.rarity}
                       className={[
-                        styles.rarityTab,
-                        selectedCard.rarity === c.rarity ? styles.rarityTabActive : '',
+                        'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
+                        selectedCard.rarity === c.rarity
+                          ? 'border-gold-500 bg-gold-100/50 text-gold-700'
+                          : 'border-charcoal-200 text-charcoal-400 hover:border-charcoal-400',
                       ].join(' ')}
                       onClick={() => setActiveCard({ card_id: c.card_id, rarity: c.rarity })}
                     >
@@ -239,85 +241,67 @@ export default function TraineeListPage() {
                   ))}
                 </div>
 
-                {/* Stats */}
                 <Card>
-                  <div className={styles.cardSectionTitle}>Base Stats</div>
-                  <div className={styles.statsGrid}>
-                    <StatBar label="Speed"   value={selectedCard.speed}   />
-                    <StatBar label="Stamina" value={selectedCard.stamina} />
-                    <StatBar label="Power"   value={selectedCard.power}   />
-                    <StatBar label="Guts"    value={selectedCard.guts}    />
-                    <StatBar label="Wit"     value={selectedCard.wit}     />
-                  </div>
-                  <div className={styles.maxStatsNote}>
+                  <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-charcoal-500">Base Stats</div>
+                  <StatBar label="Speed"   value={selectedCard.speed}   />
+                  <StatBar label="Stamina" value={selectedCard.stamina} />
+                  <StatBar label="Power"   value={selectedCard.power}   />
+                  <StatBar label="Guts"    value={selectedCard.guts}    />
+                  <StatBar label="Wit"     value={selectedCard.wit}     />
+                  <div className="mt-3 text-[11px] text-charcoal-300">
                     Max: {selectedCard.speed_max} / {selectedCard.stamina_max} / {selectedCard.power_max} / {selectedCard.guts_max} / {selectedCard.wit_max}
                   </div>
                 </Card>
 
-                {/* Aptitudes */}
                 <Card>
-                  <div className={styles.cardSectionTitle}>Aptitudes</div>
-                  <div className={styles.aptGrid}>
-                    <div className={styles.aptGroup}>
-                      <div className={styles.aptGroupLabel}>Surface</div>
-                      <div className={styles.aptRow}>
-                        <span className={styles.aptKey}>Turf</span>
-                        <AptBadge rank={selectedCard.apt_turf} />
-                        <span className={styles.aptKey}>Dirt</span>
-                        <AptBadge rank={selectedCard.apt_dirt} />
+                  <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-charcoal-500">Aptitudes</div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div>
+                      <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-charcoal-300">Surface</div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                        <span className="text-charcoal-400">Turf</span><AptBadge rank={selectedCard.apt_turf} />
+                        <span className="text-charcoal-400">Dirt</span><AptBadge rank={selectedCard.apt_dirt} />
                       </div>
                     </div>
-                    <div className={styles.aptGroup}>
-                      <div className={styles.aptGroupLabel}>Distance</div>
-                      <div className={styles.aptRow}>
-                        <span className={styles.aptKey}>Short</span>
-                        <AptBadge rank={selectedCard.apt_short} />
-                        <span className={styles.aptKey}>Mile</span>
-                        <AptBadge rank={selectedCard.apt_mile} />
-                        <span className={styles.aptKey}>Middle</span>
-                        <AptBadge rank={selectedCard.apt_middle} />
-                        <span className={styles.aptKey}>Long</span>
-                        <AptBadge rank={selectedCard.apt_long} />
+                    <div>
+                      <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-charcoal-300">Distance</div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                        <span className="text-charcoal-400">Short</span><AptBadge rank={selectedCard.apt_short} />
+                        <span className="text-charcoal-400">Mile</span><AptBadge rank={selectedCard.apt_mile} />
+                        <span className="text-charcoal-400">Middle</span><AptBadge rank={selectedCard.apt_middle} />
+                        <span className="text-charcoal-400">Long</span><AptBadge rank={selectedCard.apt_long} />
                       </div>
                     </div>
-                    <div className={styles.aptGroup}>
-                      <div className={styles.aptGroupLabel}>Running Style</div>
-                      <div className={styles.aptRow}>
-                        <span className={styles.aptKey}>逃げ</span>
-                        <AptBadge rank={selectedCard.apt_nige} />
-                        <span className={styles.aptKey}>先行</span>
-                        <AptBadge rank={selectedCard.apt_senko} />
-                        <span className={styles.aptKey}>差し</span>
-                        <AptBadge rank={selectedCard.apt_sashi} />
-                        <span className={styles.aptKey}>追込</span>
-                        <AptBadge rank={selectedCard.apt_oikomi} />
+                    <div>
+                      <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-charcoal-300">Running Style</div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                        <span className="text-charcoal-400">逃げ</span><AptBadge rank={selectedCard.apt_nige} />
+                        <span className="text-charcoal-400">先行</span><AptBadge rank={selectedCard.apt_senko} />
+                        <span className="text-charcoal-400">差し</span><AptBadge rank={selectedCard.apt_sashi} />
+                        <span className="text-charcoal-400">追込</span><AptBadge rank={selectedCard.apt_oikomi} />
                       </div>
                     </div>
                   </div>
                 </Card>
 
-                {/* Innate Skills */}
                 {selectedCard.innate_skills && selectedCard.innate_skills.length > 0 && (
                   <Card>
-                    <div className={styles.cardSectionTitle}>Innate Skills</div>
-                    <div className={styles.skillList}>
+                    <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-charcoal-500">Innate Skills</div>
+                    <div className="flex flex-col gap-2.5">
                       {selectedCard.innate_skills.map(sk => (
-                        <div key={sk.skill_id} className={styles.skillItem}>
-                          <div className={styles.skillTop}>
-                            <Badge
-                              color={RARITY_COLORS[sk.rarity]}
-                              bg={`${RARITY_COLORS[sk.rarity]}18`}
-                            >
+                        <div key={sk.skill_id} className="rounded-xl bg-cream-100 p-3">
+                          <div className="mb-1 flex items-center gap-2">
+                            <Badge color={RARITY_COLORS[sk.rarity]} bg={`${RARITY_COLORS[sk.rarity]}18`}>
                               {rarityLabel(sk.rarity)}
                             </Badge>
-                            <span className={styles.skillLv}>Lv.{sk.skill_level}</span>
-                            <span className={styles.skillId}>#{sk.skill_id}</span>
+                            <span className="font-mono text-[10px] text-charcoal-400">Lv.{sk.skill_level}</span>
+                            <span className="ml-auto font-mono text-[10px] text-charcoal-300">#{sk.skill_id}</span>
                           </div>
-                          <div className={styles.skillName}>
+                          <div className="text-sm font-medium text-charcoal-800">
                             {sk.name_en || sk.name_ja || `Skill #${sk.skill_id}`}
                           </div>
                           {sk.name_en && sk.name_ja && (
-                            <div className={styles.skillNameJa}>{sk.name_ja}</div>
+                            <div className="text-xs text-charcoal-400">{sk.name_ja}</div>
                           )}
                         </div>
                       ))}
@@ -326,7 +310,7 @@ export default function TraineeListPage() {
                 )}
               </>
             )}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>
