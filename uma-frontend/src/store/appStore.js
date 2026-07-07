@@ -8,6 +8,11 @@ export const useAppStore = create(
   apiOnline: null,
   setApiOnline: (v) => set({ apiOnline: v }),
 
+  // Theme (light / dark)
+  theme: 'light',
+  toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+  setTheme: (t) => set({ theme: t }),
+
   // Selected course context (shared between pages)
   selectedRacetrack: null,
   selectedCourse: null,
@@ -71,6 +76,7 @@ export const useAppStore = create(
       partialize: (state) => ({
         savedTrainees: state.savedTrainees,
         selectedSavedTraineeIds: state.selectedSavedTraineeIds,
+        theme: state.theme,
       }),
     }
   )

@@ -1,13 +1,13 @@
 // uma-frontend/src/pages/SkillChecker/index.jsx
 import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../../store/appStore';
 import { getValidSkills, analyzeUma, getCharacters, getCharacter } from '../../api/services';
 import { Button, Card, Badge, Empty, Spinner } from '../../components/ui';
 import { RARITY_COLORS, rarityLabel, formatTrackName, formatCourseName } from '../../utils/labels';
 import { getRacetracks, getCourses } from '../../api/services';
 import { STYLE_OPTIONS, APT_OPTIONS, MOOD_OPTIONS } from '../../utils/labels';
+import styles from './SkillChecker.module.css';
 
 const STEPS = ['Track', 'Trainee', 'Stats', 'Skills', 'Result'];
 const STATS = ['speed', 'stamina', 'power', 'guts', 'wisdom'];
@@ -25,11 +25,6 @@ function cardLabel(card_id, chara_id) {
   return `Alt ${ver}`;
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0 },
-};
-
 export default function SkillCheckerPage() {
   const {
     selectedRacetrack, selectedCourse,
@@ -46,6 +41,7 @@ export default function SkillCheckerPage() {
   const [selectedCardId, setSelectedCardId] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
 
+  // Ref untuk track skill yang sudah di-auto-select
   const autoSelectedIdsRef = useRef(new Set());
 
   const { data: racetracks = [], isLoading: loadingTracks } = useQuery({
@@ -94,9 +90,9 @@ export default function SkillCheckerPage() {
       .sort((a, b) => b.rarity - a.rarity)[0]
       ?? allCards.sort((a, b) => b.rarity - a.rarity)[0];
     setSelectedCardId(defaultCard?.card_id ?? null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [traineeDetail?.character?.id]);
 
+  // Unique skill hanya dari card yang aktif
   const traineeUniqueSkillIds = new Set();
   if (activeCardId && cardGroups[activeCardId]) {
     for (const card of cardGroups[activeCardId]) {
@@ -106,6 +102,7 @@ export default function SkillCheckerPage() {
     }
   }
 
+  // Unique skill detail dari card aktif (untuk ditampilkan di step 3)
   const uniqueSkillsFromDetail = [];
   if (activeCardId && cardGroups[activeCardId]) {
     for (const card of cardGroups[activeCardId]) {
@@ -139,6 +136,7 @@ export default function SkillCheckerPage() {
     return sk.name_ja?.toLowerCase().includes(q) || sk.name_en?.toLowerCase().includes(q);
   });
 
+  // Auto-select unique skill saat trainee/card berubah
   useEffect(() => {
     if (traineeUniqueSkillIds.size === 0) return;
     for (const id of traineeUniqueSkillIds) {
@@ -186,6 +184,7 @@ export default function SkillCheckerPage() {
   };
 
   const handleSelectTrainee = (t) => {
+    // Hapus semua skill yang pernah di-auto-select
     for (const id of autoSelectedIdsRef.current) {
       if (selectedSkillIds.includes(id)) toggleSkill(id);
     }
@@ -196,6 +195,7 @@ export default function SkillCheckerPage() {
   };
 
   const handleSelectCard = (cardId) => {
+    // Hapus skill auto-select dari card sebelumnya
     for (const id of autoSelectedIdsRef.current) {
       if (selectedSkillIds.includes(id)) toggleSkill(id);
     }
@@ -210,18 +210,13 @@ export default function SkillCheckerPage() {
     unknown: 'var(--text3)',
   };
 
-  const labelCls = 'mb-1.5 block text-xs font-medium text-charcoal-500';
-  const formSection = 'mb-4';
-
   // ── Step 0: Track ──────────────────────────────────────────────────────────
   const renderStep0 = () => (
-    <motion.div variants={fadeUp} initial="hidden" animate="show" className="max-w-xl">
-      <h2 className="font-serif text-2xl font-semibold text-charcoal-800 mb-6">
-        Pilih Race Track &amp; Course
-      </h2>
+    <div className={styles.stepBody}>
+      <h2 className={styles.stepTitle}>🏟️ Pilih Race Track & Course</h2>
 
-      <div className={formSection}>
-        <label className={labelCls}>Racetrack</label>
+      <div className={styles.formSection}>
+        <label className={styles.label}>Racetrack</label>
         {loadingTracks ? <Spinner /> : (
           <select
             value={selectedRacetrack?.id ?? ''}
@@ -238,8 +233,8 @@ export default function SkillCheckerPage() {
         )}
       </div>
 
-      <div className={formSection}>
-        <label className={labelCls}>Course</label>
+      <div className={styles.formSection}>
+        <label className={styles.label}>Course</label>
         {loadingCourses && selectedRacetrack ? <Spinner /> : (
           <select
             value={selectedCourse?.id ?? ''}
@@ -258,8 +253,8 @@ export default function SkillCheckerPage() {
       </div>
 
       {selectedCourse && (
-        <div className={formSection}>
-          <label className={labelCls}>Kondisi Lintasan</label>
+        <div className={styles.formSection}>
+          <label className={styles.label}>🌤️ Kondisi Lintasan</label>
           <select value={groundCondition} onChange={(e) => setGroundCondition(Number(e.target.value))}>
             <option value={1}>Firm</option>
             <option value={2}>Good</option>
@@ -270,25 +265,25 @@ export default function SkillCheckerPage() {
       )}
 
       {selectedCourse && (
-        <div className="mt-2 rounded-2xl border border-sage-200 bg-sage-50 px-4 py-3 text-sm font-medium text-sage-700">
-          {formatTrackName(selectedRacetrack)} — {formatCourseName(selectedCourse)}
+        <div className={styles.selectedInfo}>
+          <span>✅ {formatTrackName(selectedRacetrack)} — {formatCourseName(selectedCourse)}</span>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 
   // ── Step 1: Trainee ────────────────────────────────────────────────────────
   const renderStep1 = () => (
-    <motion.div variants={fadeUp} initial="hidden" animate="show">
-      <h2 className="font-serif text-2xl font-semibold text-charcoal-800 mb-1">
-        Pilih Trainee <span className="font-sans text-sm italic font-normal text-charcoal-400">(opsional)</span>
+    <div className={styles.stepBody}>
+      <h2 className={styles.stepTitle}>
+        🐴 Pilih Trainee <span className={styles.optional}>(opsional)</span>
       </h2>
-      <p className="mb-5 text-sm text-charcoal-400 max-w-lg">
+      <p className={styles.stepHint}>
         Unique skill milik trainee akan otomatis dipilih dan unique skill lainnya disembunyikan.
       </p>
 
-      <div className={`${formSection} max-w-sm`}>
-        <label className={labelCls}>Cari trainee</label>
+      <div className={styles.formSection}>
+        <label className={styles.label}>Cari trainee</label>
         <input
           type="text"
           placeholder="Ketik nama trainee..."
@@ -298,35 +293,34 @@ export default function SkillCheckerPage() {
       </div>
 
       {selectedTrainee && (
-        <div className="mb-4 flex flex-wrap items-center gap-2.5 rounded-2xl border border-sage-200 bg-sage-50 px-4 py-2.5">
+        <div className={styles.selectedInfo}>
           <img
             src={`/images/uma_icons/Game_Playable_Icon_${selectedTrainee.id}01.png`}
             alt=""
-            className="h-7 w-7 rounded-full object-cover"
+            className={styles.traineeIconSmall}
             onError={(e) => { e.target.style.display = 'none'; }}
           />
-          <span className="text-sm font-medium text-sage-700">{selectedTrainee.name_en || selectedTrainee.name_ja}</span>
+          <span>✅ {selectedTrainee.name_en || selectedTrainee.name_ja}</span>
           {traineeUniqueSkillIds.size > 0 && (
-            <Badge color="var(--accent2)" bg="var(--accent-bg2)">{traineeUniqueSkillIds.size} unique skill</Badge>
+            <span className={styles.uniqueBadge}>
+              {traineeUniqueSkillIds.size} unique skill
+            </span>
           )}
-          <button
-            className="ml-auto text-charcoal-400 hover:text-charcoal-700"
-            onClick={() => {
-              for (const id of autoSelectedIdsRef.current) {
-                if (selectedSkillIds.includes(id)) toggleSkill(id);
-              }
-              autoSelectedIdsRef.current = new Set();
-              setSelectedTrainee(null);
-              setSelectedCardId(null);
-            }}
-          >✕</button>
+          <button className={styles.clearBtn} onClick={() => {
+            for (const id of autoSelectedIdsRef.current) {
+              if (selectedSkillIds.includes(id)) toggleSkill(id);
+            }
+            autoSelectedIdsRef.current = new Set();
+            setSelectedTrainee(null);
+            setSelectedCardId(null);
+          }}>✕</button>
         </div>
       )}
 
       {selectedTrainee && uniqueCardIds.length > 1 && (
-        <div className="mb-5">
-          <label className={labelCls}>Versi Trainee</label>
-          <div className="flex flex-wrap gap-2">
+        <div className={styles.cardVersionSection}>
+          <label className={styles.label}>Versi Trainee</label>
+          <div className={styles.cardVersionTabs}>
             {uniqueCardIds.map((cid) => {
               const isActive = cid === activeCardId;
               const ver = cardVersion(cid, selectedTrainee.id);
@@ -335,17 +329,15 @@ export default function SkillCheckerPage() {
                 <button
                   key={cid}
                   className={[
-                    'flex items-center gap-2 rounded-2xl border px-3 py-1.5 text-xs font-medium transition-colors',
-                    isActive
-                      ? 'border-sage-500 bg-sage-50 text-sage-700'
-                      : 'border-charcoal-200 text-charcoal-500 hover:border-charcoal-400',
+                    styles.cardVersionTab,
+                    isActive ? styles.cardVersionTabActive : '',
                   ].join(' ')}
                   onClick={() => handleSelectCard(cid)}
                 >
                   <img
                     src={`/images/uma_icons/Game_Playable_Icon_${selectedTrainee.id}${iconSuffix}.png`}
                     alt=""
-                    className="h-5 w-5 rounded-full object-cover"
+                    className={styles.cardVersionIcon}
                     onError={(e) => { e.target.style.display = 'none'; }}
                   />
                   <span>{cardLabel(cid, selectedTrainee.id)}</span>
@@ -357,56 +349,52 @@ export default function SkillCheckerPage() {
       )}
 
       {loadingTrainees ? (
-        <div className="flex justify-center py-10"><Spinner size={28} /></div>
+        <div className={styles.centerLoader}><Spinner size={28} /></div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+        <div className={styles.traineeGrid}>
           {trainees.map((t) => {
             const name = t.name_en || t.name_ja || '';
-            const isSel = selectedTrainee?.id === t.id;
+            const words = name.split(' ').filter(Boolean);
             const raceImg = t.name_en
               ? `/images/uma_race/${t.name_en.replace(/ /g, '_')}_(Race).png`
               : null;
             return (
-              <motion.button
+              <button
                 key={t.id}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ duration: 0.15 }}
-                className={[
-                  'relative flex aspect-[4/5] flex-col items-center justify-end overflow-hidden rounded-2xl border p-2 text-center shadow-soft',
-                  isSel ? 'border-sage-500 ring-2 ring-sage-200' : 'border-charcoal-100 hover:border-charcoal-300',
-                  'bg-cream-50',
-                ].join(' ')}
+                className={[styles.traineeCard, selectedTrainee?.id === t.id ? styles.traineeSelected : ''].join(' ')}
                 onClick={() => handleSelectTrainee(t)}
               >
+                <div className={styles.traineeNameBg}>
+                  {words.map((w, i) => (
+                    <span key={i} className={styles.traineeNameBgWord}>{w}</span>
+                  ))}
+                </div>
                 {raceImg && (
                   <img
                     src={raceImg}
                     alt=""
-                    className="absolute inset-0 h-full w-full object-cover opacity-90"
+                    className={styles.traineeRaceImg}
                     onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 )}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-charcoal-900/80 via-charcoal-900/20 to-transparent px-2 py-2">
-                  <span className="text-[11px] font-medium leading-tight text-cream-50">{name}</span>
-                </div>
-              </motion.button>
+                <span className={styles.traineeName}>{name}</span>
+              </button>
             );
           })}
         </div>
       )}
-    </motion.div>
+    </div>
   );
 
   // ── Step 2: Stats ──────────────────────────────────────────────────────────
   const renderStep2 = () => (
-    <motion.div variants={fadeUp} initial="hidden" animate="show" className="max-w-2xl">
-      <h2 className="font-serif text-2xl font-semibold text-charcoal-800 mb-6">Input Stats Uma</h2>
+    <div className={styles.stepBody}>
+      <h2 className={styles.stepTitle}>📊 Input Stats Uma</h2>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+      <div className={styles.statGrid}>
         {STATS.map((key) => (
-          <div key={key}>
-            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-charcoal-400">{STAT_LABELS[key]}</label>
+          <div key={key} className={styles.statField}>
+            <label className={styles.statLabel}>{STAT_LABELS[key]}</label>
             <input
               type="number"
               min={1}
@@ -421,8 +409,8 @@ export default function SkillCheckerPage() {
         ))}
       </div>
 
-      <div className={formSection}>
-        <label className={labelCls}>Running Style</label>
+      <div className={styles.formSection} style={{ marginTop: 20 }}>
+        <label className={styles.label}>Running Style</label>
         <select value={umaStats.style} onChange={(e) => setUmaStats({ style: e.target.value })}>
           {STYLE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -430,47 +418,39 @@ export default function SkillCheckerPage() {
         </select>
       </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-4">
-        <div>
-          <label className={labelCls}>Distance Apt.</label>
+      <div className={styles.aptRow}>
+        <div className={styles.formSection}>
+          <label className={styles.label}>Distance Apt.</label>
           <select value={umaStats.distanceApt} onChange={(e) => setUmaStats({ distanceApt: e.target.value })}>
             {APT_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
-        <div>
-          <label className={labelCls}>Surface Apt.</label>
+        <div className={styles.formSection}>
+          <label className={styles.label}>Surface Apt.</label>
           <select value={umaStats.surfaceApt} onChange={(e) => setUmaStats({ surfaceApt: e.target.value })}>
             {APT_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
       </div>
 
-      <div className={formSection}>
-        <label className={labelCls}>Mood</label>
+      <div className={styles.formSection}>
+        <label className={styles.label}>Mood</label>
         <select value={umaStats.moodLevel} onChange={(e) => setUmaStats({ moodLevel: Number(e.target.value) })}>
           {MOOD_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
       </div>
-    </motion.div>
+    </div>
   );
 
   // ── Step 3: Skills ─────────────────────────────────────────────────────────
-  const skillCardCls = (selected, unique) =>
-    [
-      'relative flex flex-col rounded-2xl border p-3.5 text-left transition-colors shadow-soft',
-      selected
-        ? unique ? 'border-gold-500 bg-gold-100/40' : 'border-sage-500 bg-sage-50'
-        : 'border-charcoal-100 bg-cream-50 hover:border-charcoal-300',
-    ].join(' ');
-
   const renderStep3 = () => (
-    <motion.div variants={fadeUp} initial="hidden" animate="show">
-      <h2 className="font-serif text-2xl font-semibold text-charcoal-800 mb-4">Pilih Skill</h2>
+    <div className={styles.stepBody}>
+      <h2 className={styles.stepTitle}>🎯 Pilih Skill</h2>
 
-      <div className="mb-5 flex flex-wrap items-center gap-3">
-        <span className="text-sm font-medium text-charcoal-500">
+      <div className={styles.skillHeader}>
+        <span className={styles.skillCount}>
           {selectedSkillIds.length > 0
             ? `${selectedSkillIds.length} skill dipilih`
             : 'Belum ada skill dipilih'}
@@ -480,42 +460,45 @@ export default function SkillCheckerPage() {
           placeholder="Cari skill..."
           value={skillSearch}
           onChange={(e) => setSkillSearch(e.target.value)}
-          className="max-w-xs"
+          className={styles.searchInput}
         />
         {selectedSkillIds.length > 0 && (
-          <button className="text-xs font-medium text-clay-500 hover:underline" onClick={clearSkills}>Reset</button>
+          <button className={styles.clearBtn} onClick={clearSkills}>Reset</button>
         )}
       </div>
 
+      {/* Unique skill dari traineeDetail langsung */}
       {filteredUnique.length > 0 && (
-        <div className="mb-6">
-          <div className="mb-2.5 flex flex-wrap items-center gap-2 text-xs font-semibold text-gold-700">
-            <span>⭐ Unique Skill — {selectedTrainee?.name_en || selectedTrainee?.name_ja}</span>
+        <div className={styles.uniqueSection}>
+          <div className={styles.uniqueSectionLabel}>
+            ⭐ Unique Skill — {selectedTrainee?.name_en || selectedTrainee?.name_ja}
             {uniqueCardIds.length > 1 && (
-              <Badge color="var(--accent2)" bg="var(--accent-bg2)">{cardLabel(activeCardId, selectedTrainee?.id)}</Badge>
+              <span className={styles.cardVersionBadge}>
+                {cardLabel(activeCardId, selectedTrainee?.id)}
+              </span>
             )}
-            <span className="font-normal italic text-charcoal-400">otomatis dipilih</span>
+            <span className={styles.autoTag}>otomatis dipilih</span>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className={styles.skillGrid}>
             {filteredUnique.map((sk) => {
               const selected = selectedSkillIds.includes(sk.skill_id);
               return (
                 <button
                   key={sk.skill_id}
-                  className={skillCardCls(selected, true)}
+                  className={[styles.skillCard, styles.skillUnique, selected ? styles.skillSelected : ''].join(' ')}
                   onClick={() => toggleSkill(sk.skill_id)}
                 >
-                  <div className="mb-1.5 flex items-center justify-between">
+                  <div className={styles.skillTop}>
                     <Badge color={RARITY_COLORS[sk.rarity]} bg={`${RARITY_COLORS[sk.rarity]}18`}>
                       {rarityLabel(sk.rarity)}
                     </Badge>
-                    {selected && <span className="text-sage-600">✓</span>}
+                    {selected && <span className={styles.checkmark}>✓</span>}
                   </div>
-                  <div className="text-sm font-medium text-charcoal-800">
+                  <div className={styles.skillName}>
                     {sk.name_en || sk.name_ja || `Skill #${sk.skill_id}`}
                   </div>
                   {sk.name_en && sk.name_ja && (
-                    <div className="mt-0.5 text-xs text-charcoal-400">{sk.name_ja}</div>
+                    <div className={styles.skillNameJa}>{sk.name_ja}</div>
                   )}
                 </button>
               );
@@ -525,34 +508,34 @@ export default function SkillCheckerPage() {
       )}
 
       {loadingSkills ? (
-        <div className="flex justify-center py-10"><Spinner size={28} /></div>
+        <div className={styles.centerLoader}><Spinner size={28} /></div>
       ) : filteredNonUnique.length === 0 && filteredUnique.length === 0 ? (
         <Empty icon="🔍" message="Tidak ada skill yang cocok" />
       ) : (
         filteredNonUnique.length > 0 && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className={styles.skillGrid}>
             {filteredNonUnique.map((skill) => {
               const selected = selectedSkillIds.includes(skill.id);
               return (
                 <button
                   key={skill.id}
-                  className={skillCardCls(selected, false)}
+                  className={[styles.skillCard, selected ? styles.skillSelected : ''].join(' ')}
                   onClick={() => toggleSkill(skill.id)}
                 >
-                  <div className="mb-1.5 flex items-center justify-between">
+                  <div className={styles.skillTop}>
                     <Badge color={RARITY_COLORS[skill.rarity]} bg={`${RARITY_COLORS[skill.rarity]}18`}>
                       {rarityLabel(skill.rarity)}
                     </Badge>
-                    {selected && <span className="text-sage-600">✓</span>}
+                    {selected && <span className={styles.checkmark}>✓</span>}
                   </div>
-                  <div className="text-sm font-medium text-charcoal-800">
+                  <div className={styles.skillName}>
                     {skill.name_en || skill.name_ja || `Skill #${skill.id}`}
                   </div>
                   {skill.name_en && skill.name_ja && (
-                    <div className="mt-0.5 text-xs text-charcoal-400">{skill.name_ja}</div>
+                    <div className={styles.skillNameJa}>{skill.name_ja}</div>
                   )}
                   {skill.isValid === false && (
-                    <div className="mt-1.5 text-[10px] font-medium text-clay-500">Possibly invalid</div>
+                    <div className={styles.invalidBadge}>Possibly invalid</div>
                   )}
                 </button>
               );
@@ -560,60 +543,63 @@ export default function SkillCheckerPage() {
           </div>
         )
       )}
-    </motion.div>
+    </div>
   );
 
   // ── Step 4: Result ─────────────────────────────────────────────────────────
   const renderStep4 = () => (
-    <motion.div variants={fadeUp} initial="hidden" animate="show" className="max-w-2xl">
-      <h2 className="font-serif text-2xl font-semibold text-charcoal-800 mb-5">Hasil Analisis</h2>
+    <div className={styles.stepBody}>
+      <h2 className={styles.stepTitle}>📊 Hasil Analisis</h2>
 
       {analyzeMutation.isPending && (
-        <div className="flex justify-center py-10"><Spinner size={36} /></div>
+        <div className={styles.centerLoader}><Spinner size={36} /></div>
       )}
       {analyzeMutation.isError && (
         <Empty icon="⚠️" message={analyzeMutation.error?.message || 'Gagal menganalisis'} />
       )}
 
       {analysisResult && (
-        <div className="flex flex-col gap-3">
-          <Card>
-            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
-              <span className="text-charcoal-400">Course</span>
+        <div className={styles.resultList}>
+          <Card className={styles.courseInfoCard}>
+            <div className={styles.courseInfoGrid}>
+              <span className={styles.infoLabel}>Course</span>
               <span>{analysisResult.courseInfo?.distance}m</span>
-              <span className="text-charcoal-400">Ground</span>
+              <span className={styles.infoLabel}>Ground</span>
               <span>{analysisResult.courseInfo?.ground === 1 ? 'Turf' : 'Dirt'}</span>
-              <span className="text-charcoal-400">Sections</span>
+              <span className={styles.infoLabel}>Sections</span>
               <span>{analysisResult.simulationMeta?.totalSections}</span>
-              <span className="text-charcoal-400">Trainee</span>
+              <span className={styles.infoLabel}>Trainee</span>
               <span>
                 {selectedTrainee?.name_en || selectedTrainee?.name_ja || '—'}
                 {uniqueCardIds.length > 1 && activeCardId && (
-                  <Badge color="var(--accent2)" bg="var(--accent-bg2)">
+                  <span className={styles.cardVersionBadge} style={{ marginLeft: 6 }}>
                     {cardLabel(activeCardId, selectedTrainee?.id)}
-                  </Badge>
+                  </span>
                 )}
               </span>
             </div>
           </Card>
 
           {analysisResult.skills?.map((s) => (
-            <Card key={s.id}>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-medium text-charcoal-800">
+            <Card key={s.id} className={styles.resultCard}>
+              <div className={styles.resultTop}>
+                <span className={styles.resultName}>
                   {s.name_en || s.name_ja || `Skill #${s.id}`}
                 </span>
-                <span className="text-xs font-semibold" style={{ color: statusColor[s.status] || 'var(--text3)' }}>
+                <span
+                  className={styles.resultStatus}
+                  style={{ color: statusColor[s.status] || 'var(--text3)' }}
+                >
                   {s.status}
                 </span>
               </div>
 
               {s.activeSections?.length > 0 && (
-                <div className="mb-2 flex flex-wrap gap-[3px]">
+                <div className={styles.sectionBar}>
                   {Array.from({ length: analysisResult.simulationMeta?.totalSections || 24 }).map((_, i) => (
                     <span
                       key={i}
-                      className="h-2 w-2 rounded-full"
+                      className={styles.sectionDot}
                       style={{
                         background: s.activeSections.includes(i) ? 'var(--green)' : 'var(--bg4)',
                       }}
@@ -622,38 +608,34 @@ export default function SkillCheckerPage() {
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-4 text-xs text-charcoal-400">
+              <div className={styles.resultMeta}>
                 {s.activationRate != null && (
                   <span>Rate: {(s.activationRate * 100).toFixed(0)}%</span>
                 )}
                 {s.score != null && (
-                  <span className="text-sage-600 font-medium">Score: {s.score.toFixed(1)}</span>
+                  <span style={{ color: 'var(--accent)' }}>Score: {s.score.toFixed(1)}</span>
                 )}
               </div>
-              {s.note && <div className="mt-2 text-xs italic text-charcoal-400">{s.note}</div>}
+              {s.note && <div className={styles.resultNote}>{s.note}</div>}
             </Card>
           ))}
         </div>
       )}
-    </motion.div>
+    </div>
   );
 
   const stepContent = [renderStep0, renderStep1, renderStep2, renderStep3, renderStep4];
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Stepper */}
-      <div className="flex flex-shrink-0 items-center gap-1 overflow-x-auto border-b border-charcoal-100 bg-cream-50 px-4 py-3.5 md:px-8">
+    <div className={styles.wrapper}>
+      <div className={styles.stepper}>
         {STEPS.map((label, i) => (
-          <div key={i} className="flex flex-shrink-0 items-center">
+          <div key={i} className={styles.stepperItem}>
             <button
               className={[
-                'flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold transition-colors',
-                i === step
-                  ? 'border-sage-600 bg-sage-600 text-cream-50'
-                  : i < step
-                  ? 'border-sage-300 bg-sage-100 text-sage-700 cursor-pointer'
-                  : 'border-charcoal-200 text-charcoal-300',
+                styles.stepDot,
+                i === step ? styles.stepDotActive : '',
+                i < step ? styles.stepDotDone : '',
               ].join(' ')}
               onClick={() => i < step && setStep(i)}
               disabled={i > step}
@@ -661,35 +643,27 @@ export default function SkillCheckerPage() {
             >
               {i < step ? '✓' : i + 1}
             </button>
-            <span className={[
-              'ml-2 mr-3 hidden text-xs font-medium sm:inline',
-              i === step ? 'text-charcoal-800' : 'text-charcoal-300',
-            ].join(' ')}>
+            <span className={[styles.stepLabel, i === step ? styles.stepLabelActive : ''].join(' ')}>
               {label}
             </span>
             {i < STEPS.length - 1 && (
-              <div className={[
-                'mr-3 h-px w-6 sm:w-10',
-                i < step ? 'bg-sage-400' : 'bg-charcoal-200',
-              ].join(' ')} />
+              <div className={[styles.stepLine, i < step ? styles.stepLineDone : ''].join(' ')} />
             )}
           </div>
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8">
-        <AnimatePresence mode="wait">
-          <div key={step}>{stepContent[step]?.()}</div>
-        </AnimatePresence>
+      <div className={styles.content}>
+        {stepContent[step]?.()}
       </div>
 
-      <div className="flex flex-shrink-0 items-center gap-3 border-t border-charcoal-100 bg-cream-50 px-4 py-3.5 md:px-8">
+      <div className={styles.footer}>
         {step > 0 && step < 4 && (
           <Button variant="ghost" onClick={() => setStep((s) => s - 1)}>
             ← Kembali
           </Button>
         )}
-        <div className="ml-auto flex gap-3">
+        <div className={styles.footerRight}>
           {step < 3 && (
             <Button variant="primary" disabled={!canGoNext()} onClick={() => setStep((s) => s + 1)}>
               Lanjut →

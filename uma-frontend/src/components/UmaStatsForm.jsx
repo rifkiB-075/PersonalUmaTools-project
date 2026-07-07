@@ -1,6 +1,7 @@
 import { useAppStore } from '../store/appStore';
-import { SectionLabel } from './ui';
+import { FormGroup, SectionLabel } from './ui';
 import { STYLE_OPTIONS, APT_OPTIONS, MOOD_OPTIONS } from '../utils/labels';
+import styles from './UmaStatsForm.module.css';
 
 const STATS = ['speed', 'stamina', 'power', 'guts', 'wisdom'];
 const STAT_LABELS = { speed: 'Speed', stamina: 'Stamina', power: 'Power', guts: 'Guts', wisdom: 'Wisdom' };
@@ -17,10 +18,10 @@ export default function UmaStatsForm() {
     <div>
       <SectionLabel icon="📊">Stats Uma</SectionLabel>
 
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className={styles.statGrid}>
         {STATS.map((key) => (
-          <div key={key}>
-            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-charcoal-400">{STAT_LABELS[key]}</label>
+          <div key={key} className={styles.statField}>
+            <label>{STAT_LABELS[key]}</label>
             <input
               type="number"
               min={1}
@@ -32,10 +33,9 @@ export default function UmaStatsForm() {
         ))}
       </div>
 
-      <SectionLabel icon="🎯">Gaya &amp; Aptitude</SectionLabel>
+      <SectionLabel icon="🎯">Gaya & Aptitude</SectionLabel>
 
-      <div className="mb-4">
-        <label className="mb-1.5 block text-xs font-medium text-charcoal-500">Running Style</label>
+      <FormGroup label="Running Style">
         <select
           value={umaStats.style}
           onChange={(e) => setUmaStats({ style: e.target.value })}
@@ -46,11 +46,11 @@ export default function UmaStatsForm() {
             </option>
           ))}
         </select>
-      </div>
+      </FormGroup>
 
-      <div className="mb-4 grid grid-cols-2 gap-3">
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-charcoal-500">Distance Apt.</label>
+      <div className={styles.aptGrid}>
+        <div className={styles.aptField}>
+          <label>Distance Apt.</label>
           <select
             value={umaStats.distanceApt}
             onChange={(e) => setUmaStats({ distanceApt: e.target.value })}
@@ -60,8 +60,8 @@ export default function UmaStatsForm() {
             ))}
           </select>
         </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-charcoal-500">Surface Apt.</label>
+        <div className={styles.aptField}>
+          <label>Surface Apt.</label>
           <select
             value={umaStats.surfaceApt}
             onChange={(e) => setUmaStats({ surfaceApt: e.target.value })}
@@ -73,8 +73,7 @@ export default function UmaStatsForm() {
         </div>
       </div>
 
-      <div className="mb-4">
-        <label className="mb-1.5 block text-xs font-medium text-charcoal-500">Mood</label>
+      <FormGroup label="Mood">
         <select
           value={umaStats.moodLevel}
           onChange={(e) => setUmaStats({ moodLevel: Number(e.target.value) })}
@@ -85,7 +84,7 @@ export default function UmaStatsForm() {
             </option>
           ))}
         </select>
-      </div>
+      </FormGroup>
     </div>
   );
 }

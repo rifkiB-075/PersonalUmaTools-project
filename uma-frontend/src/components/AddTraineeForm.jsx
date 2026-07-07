@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getCharacters, getCharacter, searchSkills } from '../api/services';
 import { Button, FormGroup, Spinner, Empty, Badge } from './ui';
 import { STYLE_OPTIONS, APT_OPTIONS, MOOD_OPTIONS, RARITY_COLORS, rarityLabel } from '../utils/labels';
+import styles from './AddTraineeForm.module.css';
 
 const STATS = ['speed', 'stamina', 'power', 'guts', 'wisdom'];
 const STAT_LABELS = { speed: 'Speed', stamina: 'Stamina', power: 'Power', guts: 'Guts', wisdom: 'Wisdom' };
@@ -41,12 +42,6 @@ export default function AddTraineeForm({ editingTrainee, onSave, onCancel }) {
   const [skillIds, setSkillIds] = useState(editingTrainee?.skillIds ?? []);
   const [skillSearch, setSkillSearch] = useState('');
 
-  // Melacak skill_id unique yang di-auto-select untuk versi card yang sedang aktif,
-  // supaya waktu ganti versi (Default <-> Alt) skill unique versi lama ikut dilepas,
-  // bukan nyangkut terus di skillIds.
-  const autoSelectedIdsRef = useRef(new Set());
-  const prevCardIdRef = useRef(undefined);
-
   const { data: listData, isLoading: loadingList } = useQuery({
     queryKey: ['characters', search],
     queryFn: () => getCharacters(search, 60),
@@ -69,6 +64,7 @@ export default function AddTraineeForm({ editingTrainee, onSave, onCancel }) {
   }, {});
   const uniqueCardIds = Object.keys(cardGroups).map(Number).sort();
 
+  // Unique skill (innate) dari card yang sedang aktif
   const activeCardId = selectedCardId ?? uniqueCardIds[0] ?? null;
   const uniqueSkills = [];
   if (activeCardId && cardGroups[activeCardId]) {
@@ -92,6 +88,7 @@ export default function AddTraineeForm({ editingTrainee, onSave, onCancel }) {
     setSkillIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
+  // Saat trainee baru dipilih, auto pilih card default + unique skill-nya
   useEffect(() => {
     if (!detail || editingTrainee) return;
     const defaultCard =
@@ -99,47 +96,12 @@ export default function AddTraineeForm({ editingTrainee, onSave, onCancel }) {
       cards.sort((a, b) => b.rarity - a.rarity)[0];
     setSelectedCardId(defaultCard?.card_id ?? null);
     if (!label) setLabel(selectedChara.name_en || selectedChara.name_ja || '');
+    const initialUniqueIds = (defaultCard?.innate_skills || []).map((s) => s.skill_id);
+    if (initialUniqueIds.length > 0) {
+      setSkillIds((prev) => [...new Set([...prev, ...initialUniqueIds])]);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detail?.character?.id]);
-
-  // Sinkronkan skillIds tiap kali versi card aktif berubah (termasuk waktu
-  // pertama kali dipilih). Skill unique milik versi SEBELUMNYA dilepas dulu,
-  // baru skill unique versi yang baru dipasang — jadi unique skill dari versi
-  // Alt tidak nyangkut waktu pindah ke Default (atau sebaliknya).
-  useEffect(() => {
-    if (!activeCardId || !cardGroups[activeCardId]) return;
-
-    const newUniqueIds = [];
-    for (const card of cardGroups[activeCardId]) {
-      for (const sk of card.innate_skills || []) {
-        if (!newUniqueIds.includes(sk.skill_id)) newUniqueIds.push(sk.skill_id);
-      }
-    }
-
-    const isFirstRun = prevCardIdRef.current === undefined;
-    prevCardIdRef.current = activeCardId;
-
-    if (isFirstRun) {
-      // Mode edit: jangan ubah skillIds yang sudah tersimpan, cukup catat
-      // mana yang kebetulan sudah cocok dengan unique skill versi ini,
-      // supaya bisa dilepas dengan benar kalau nanti versi diganti.
-      // Mode tambah baru: auto-select unique skill versi default.
-      if (editingTrainee) {
-        autoSelectedIdsRef.current = new Set(newUniqueIds.filter((id) => skillIds.includes(id)));
-      } else if (newUniqueIds.length > 0) {
-        setSkillIds((prev) => [...new Set([...prev, ...newUniqueIds])]);
-        autoSelectedIdsRef.current = new Set(newUniqueIds);
-      }
-      return;
-    }
-
-    setSkillIds((prev) => {
-      const withoutOldVersion = prev.filter((id) => !autoSelectedIdsRef.current.has(id));
-      return [...new Set([...withoutOldVersion, ...newUniqueIds])];
-    });
-    autoSelectedIdsRef.current = new Set(newUniqueIds);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCardId]);
 
   const handleStat = (key, val) => {
     const n = parseInt(val, 10);
@@ -169,16 +131,8 @@ export default function AddTraineeForm({ editingTrainee, onSave, onCancel }) {
     onSave(trainee);
   };
 
-  const skillBtnCls = (selected, unique) =>
-    [
-      'flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs transition-colors',
-      selected
-        ? unique ? 'border-gold-500 bg-gold-100/40' : 'border-sage-500 bg-sage-50'
-        : 'border-charcoal-100 bg-cream-50 hover:border-charcoal-300',
-    ].join(' ');
-
   return (
-    <div>
+    <div className={styles.form}>
       <FormGroup label="Nama Simpanan">
         <input
           type="text"
@@ -190,17 +144,17 @@ export default function AddTraineeForm({ editingTrainee, onSave, onCancel }) {
 
       <FormGroup label="Pilih Trainee">
         {selectedChara ? (
-          <div className="flex items-center gap-2.5 rounded-2xl border border-sage-200 bg-sage-50 px-3.5 py-2.5">
+          <div className={styles.selectedChara}>
             <img
               src={`/images/uma_icons/Game_Playable_Icon_${selectedChara.id}01.png`}
               alt=""
-              className="h-7 w-7 rounded-full object-cover"
+              className={styles.charaIcon}
               onError={(e) => { e.target.style.display = 'none'; }}
             />
-            <span className="text-sm font-medium text-sage-700">{selectedChara.name_en || selectedChara.name_ja}</span>
+            <span>{selectedChara.name_en || selectedChara.name_ja}</span>
             <button
               type="button"
-              className="ml-auto text-xs font-medium text-charcoal-400 hover:text-charcoal-700"
+              className={styles.clearBtn}
               onClick={() => { setSelectedChara(null); setSelectedCardId(null); }}
             >
               Ganti
@@ -213,28 +167,28 @@ export default function AddTraineeForm({ editingTrainee, onSave, onCancel }) {
               placeholder="Cari nama trainee..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="mb-2"
+              className={styles.searchInput}
             />
             {loadingList ? (
-              <div className="flex justify-center py-4"><Spinner size={24} /></div>
+              <div className={styles.centerLoader}><Spinner size={24} /></div>
             ) : characters.length === 0 ? (
               <Empty icon="🔍" message="Trainee tidak ditemukan" />
             ) : (
-              <div className="grid max-h-56 grid-cols-2 gap-1.5 overflow-y-auto sm:grid-cols-3">
+              <div className={styles.charaList}>
                 {characters.map((c) => (
                   <button
                     key={c.id}
                     type="button"
-                    className="flex items-center gap-2 rounded-xl border border-charcoal-100 bg-cream-50 px-2 py-1.5 text-left text-xs hover:border-charcoal-300"
+                    className={styles.charaItem}
                     onClick={() => handleSelectChara(c)}
                   >
                     <img
                       src={`/images/uma_icons/Game_Playable_Icon_${c.id}01.png`}
                       alt=""
-                      className="h-5 w-5 flex-shrink-0 rounded-full object-cover"
+                      className={styles.charaIcon}
                       onError={(e) => { e.target.style.display = 'none'; }}
                     />
-                    <span className="truncate">{c.name_en || c.name_ja || `#${c.id}`}</span>
+                    <span>{c.name_en || c.name_ja || `#${c.id}`}</span>
                   </button>
                 ))}
               </div>
@@ -245,14 +199,14 @@ export default function AddTraineeForm({ editingTrainee, onSave, onCancel }) {
 
       {selectedChara && uniqueCardIds.length > 1 && (
         <FormGroup label="Versi Card">
-          <div className="flex flex-wrap gap-2">
+          <div className={styles.cardVersionTabs}>
             {uniqueCardIds.map((cid) => (
               <button
                 type="button"
                 key={cid}
                 className={[
-                  'rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors',
-                  selectedCardId === cid ? 'border-sage-500 bg-sage-50 text-sage-700' : 'border-charcoal-200 text-charcoal-500 hover:border-charcoal-400',
+                  styles.cardVersionTab,
+                  selectedCardId === cid ? styles.cardVersionTabActive : '',
                 ].join(' ')}
                 onClick={() => setSelectedCardId(cid)}
               >
@@ -263,10 +217,10 @@ export default function AddTraineeForm({ editingTrainee, onSave, onCancel }) {
         </FormGroup>
       )}
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className={styles.statGrid}>
         {STATS.map((key) => (
-          <div key={key}>
-            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-charcoal-400">{STAT_LABELS[key]}</label>
+          <div key={key} className={styles.statField}>
+            <label>{STAT_LABELS[key]}</label>
             <input
               type="number"
               min={1}
@@ -286,7 +240,7 @@ export default function AddTraineeForm({ editingTrainee, onSave, onCancel }) {
         </select>
       </FormGroup>
 
-      <div className="mb-4 grid grid-cols-2 gap-3">
+      <div className={styles.aptGrid}>
         <FormGroup label="Distance Apt.">
           <select value={stats.distanceApt} onChange={(e) => setStats((s) => ({ ...s, distanceApt: e.target.value }))}>
             {APT_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
@@ -310,23 +264,23 @@ export default function AddTraineeForm({ editingTrainee, onSave, onCancel }) {
       {selectedChara && (
         <FormGroup label={`Skill (${skillIds.length} dipilih)`}>
           {uniqueSkills.length > 0 && (
-            <div className="mb-3">
-              <div className="mb-1.5 text-xs font-semibold text-gold-700">⭐ Unique Skill — {selectedChara.name_en || selectedChara.name_ja}</div>
-              <div className="flex flex-wrap gap-1.5">
+            <div className={styles.skillBlock}>
+              <div className={styles.skillBlockLabel}>⭐ Unique Skill — {selectedChara.name_en || selectedChara.name_ja}</div>
+              <div className={styles.skillGrid}>
                 {uniqueSkills.map((sk) => {
                   const selected = skillIds.includes(sk.skill_id);
                   return (
                     <button
                       type="button"
                       key={sk.skill_id}
-                      className={skillBtnCls(selected, true)}
+                      className={[styles.skillItem, styles.skillUnique, selected ? styles.skillSelected : ''].join(' ')}
                       onClick={() => toggleSkill(sk.skill_id)}
                     >
                       <Badge color={RARITY_COLORS[sk.rarity]} bg={`${RARITY_COLORS[sk.rarity]}18`}>
                         {rarityLabel(sk.rarity)}
                       </Badge>
-                      <span>{sk.name_en || sk.name_ja || `#${sk.skill_id}`}</span>
-                      {selected && <span className="text-sage-600">✓</span>}
+                      <span className={styles.skillName}>{sk.name_en || sk.name_ja || `#${sk.skill_id}`}</span>
+                      {selected && <span className={styles.checkmark}>✓</span>}
                     </button>
                   );
                 })}
@@ -339,28 +293,28 @@ export default function AddTraineeForm({ editingTrainee, onSave, onCancel }) {
             placeholder="Cari skill lain (normal/gold)..."
             value={skillSearch}
             onChange={(e) => setSkillSearch(e.target.value)}
-            className="mb-2"
+            className={styles.searchInput}
           />
           {loadingSkillList ? (
-            <div className="flex justify-center py-3"><Spinner size={20} /></div>
+            <div className={styles.centerLoader}><Spinner size={20} /></div>
           ) : filteredGeneralSkills.length === 0 ? (
             <Empty icon="🔍" message="Tidak ada skill yang cocok" />
           ) : (
-            <div className="flex max-h-56 flex-wrap gap-1.5 overflow-y-auto">
+            <div className={styles.skillGrid}>
               {filteredGeneralSkills.map((sk) => {
                 const selected = skillIds.includes(sk.id);
                 return (
                   <button
                     type="button"
                     key={sk.id}
-                    className={skillBtnCls(selected, false)}
+                    className={[styles.skillItem, selected ? styles.skillSelected : ''].join(' ')}
                     onClick={() => toggleSkill(sk.id)}
                   >
                     <Badge color={RARITY_COLORS[sk.rarity]} bg={`${RARITY_COLORS[sk.rarity]}18`}>
                       {rarityLabel(sk.rarity)}
                     </Badge>
-                    <span>{sk.name_en || sk.name_ja || `#${sk.id}`}</span>
-                    {selected && <span className="text-sage-600">✓</span>}
+                    <span className={styles.skillName}>{sk.name_en || sk.name_ja || `#${sk.id}`}</span>
+                    {selected && <span className={styles.checkmark}>✓</span>}
                   </button>
                 );
               })}
@@ -369,7 +323,7 @@ export default function AddTraineeForm({ editingTrainee, onSave, onCancel }) {
         </FormGroup>
       )}
 
-      <div className="mt-5 flex justify-end gap-3">
+      <div className={styles.formActions}>
         <Button variant="ghost" type="button" onClick={onCancel}>Batal</Button>
         <Button variant="primary" type="button" disabled={!canSave} onClick={handleSave}>
           💾 Simpan Trainee

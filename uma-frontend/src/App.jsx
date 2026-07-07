@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/layout/Layout';
@@ -5,6 +6,7 @@ import SkillCheckerPage from './pages/SkillChecker';
 import SimulatePage from './pages/Simulate';
 import SkillsPage from './pages/Skills';
 import TraineeListPage from './pages/TraineeList';
+import { useAppStore } from './store/appStore';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,6 +18,12 @@ const queryClient = new QueryClient({
 });
 
 export default function App() {
+  const theme = useAppStore((s) => s.theme);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>

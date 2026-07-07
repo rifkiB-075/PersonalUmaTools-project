@@ -36,18 +36,18 @@
   position: relative;
   display: flex;
   align-items: center;
-  background: #0d0d14;
-  border: 1.5px solid #1e1e2e;
+  background: var(--bg2);
+  border: 1.5px solid var(--border2);
   border-radius: 10px;
   padding: 0;
   cursor: pointer;
   text-align: left;
   overflow: hidden;
   height: 64px;
-  transition: border-color 0.18s, box-shadow 0.18s;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
 }
-.listItem:hover { border-color: #5b5bea; box-shadow: 0 2px 12px #5b5bea20; }
-.listItemActive { border-color: #7c5cf6 !important; box-shadow: 0 0 0 2px #7c5cf630 !important; background: #12101e !important; }
+.listItem:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(172,42,93,0.16); }
+.listItemActive { border-color: var(--accent2) !important; box-shadow: 0 0 0 2px rgba(140,10,70,0.22) !important; background: var(--accent-bg2) !important; }
 
 /* Strip warna kiri */
 .colorStrip {
@@ -67,7 +67,7 @@
 .itemName {
   font-size: 13px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
